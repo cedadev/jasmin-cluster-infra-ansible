@@ -1,0 +1,6 @@
+---
+
+- hosts: all
+  roles:
+    - stackhpc.os-shade
+    - stackhpc.cluster-infra
