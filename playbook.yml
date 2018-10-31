@@ -1,17 +1,17 @@
 ---
 
 - hosts: all
-  # We can set the cluster_group_count automatically using a pre_task
-  pre_tasks:
-    - name: Set cluster_group_count
-      set_fact:
-        cluster_params: "{{ cluster_params | combine({'cluster_group_count': cluster_params.cluster_groups|length}) }}"
   roles:
     - stackhpc.os-shade
-    - stackhpc.cluster-infra
+    - role: stackhpc.cluster-infra
+      vars:
+        # Use the version of cluster_params with the count added
+        cluster_params: "{{ cluster_params_with_count }}"
   vars:
     # Because we are not on pike, we need to use custom Heat resources
     # Even when we are on pike (?), we might want to do this anyway to customise the resources for JASMIN
     cluster_environment:
       - "{{ playbook_dir }}/files/environment.yaml"
     cluster_template: "{{ playbook_dir }}/files/resources/cluster.yaml"
+    # Set the group count automatically
+    cluster_params_with_count: "{{ cluster_params | combine({'cluster_group_count': cluster_params.cluster_groups|length}) }}"
