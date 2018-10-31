@@ -1,0 +1,66 @@
+---
+heat_template_version: 2016-04-08
+
+
+description: >
+  Resource for a group of homogeneous cluster nodes.
+
+
+parameters:
+  cluster_name:
+    type: string
+    label: The name of the cluster
+
+  cluster_groups:
+    type: json
+    label: List of dictionaries defining properties for each node group
+
+  cluster_image:
+    type: string
+    label: The image to use for cluster nodes (must be CentOS 7)
+    constraints:
+      - custom_constraint: glance.image
+
+  cluster_keypair:
+    type: string
+    label: SSH key pair for access to the cluster
+    constraints:
+      - custom_constraint: nova.keypair
+
+  cluster_network:
+    type: string
+    label: The network to attach cluster nodes to
+    constraints:
+      - custom_constraint: neutron.network
+
+  group_idx:
+    type: number
+    label: The index of the group
+
+
+resources:
+  node_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: [cluster_groups, { get_param: group_idx }, num_nodes] }
+      resource_def:
+        type: Cluster::Node
+        properties:
+          name:
+            list_join:
+              - '-'
+              - [ { get_param: cluster_name },
+                  { get_param: [cluster_groups, { get_param: group_idx }, name] },
+                  '%index%' ]
+          image: { get_param: cluster_image }
+          flavor: { get_param: [cluster_groups, { get_param: group_idx }, flavor ] }
+          key_name: { get_param: cluster_keypair }
+          network: { get_param: cluster_network }
+          root_volume_size: { get_param: [cluster_groups, { get_param: group_idx }, root_volume_size] }
+
+
+outputs:
+  group_data:
+    value:
+      group: { get_param: [cluster_groups, { get_param: group_idx }, name] }
+      nodes: { get_attr: [node_group, instance_data] }

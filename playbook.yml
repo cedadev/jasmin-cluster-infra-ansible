@@ -4,3 +4,9 @@
   roles:
     - stackhpc.os-shade
     - stackhpc.cluster-infra
+  vars:
+    # Because we are not on pike, we need to use custom Heat resources
+    # Even when we are on pike (?), we might want to do this anyway to customise the resources for JASMIN
+    cluster_environment:
+      - "{{ playbook_dir }}/files/environment.yaml"
+    cluster_template: "{{ playbook_dir }}/files/resources/cluster.yaml"
