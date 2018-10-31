@@ -1,6 +1,11 @@
 ---
 
 - hosts: all
+  # We can set the cluster_group_count automatically using a pre_task
+  pre_tasks:
+    - name: Set cluster_group_count
+      set_fact:
+        cluster_params: "{{ cluster_params | combine({'cluster_group_count': cluster_params.cluster_groups|length}) }}"
   roles:
     - stackhpc.os-shade
     - stackhpc.cluster-infra
@@ -10,5 +15,3 @@
     cluster_environment:
       - "{{ playbook_dir }}/files/environment.yaml"
     cluster_template: "{{ playbook_dir }}/files/resources/cluster.yaml"
-    # We can set the cluster_group_count automatically
-    cluster_params: "{{ cluster_params | combine({'cluster_group_count': cluster_params.cluster_groups|length}) }}"
