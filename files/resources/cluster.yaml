@@ -44,7 +44,7 @@ resources:
       resource_def:
         type: Cluster::Group
         properties:
-          cluster_name: { get_param: OS::stack_name }
+          cluster_name: { get_param: "OS::stack_name" }
           cluster_groups: { get_param: cluster_groups }
           cluster_image: { get_param: cluster_image }
           cluster_keypair: { get_param: cluster_keypair }

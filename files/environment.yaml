@@ -1,5 +1,10 @@
 ---
 
+parameters:
+  # This is the ID of the current CentOS 7 image on JASMIN
+  cluster_image: d2b7e3a8-3dbb-4cfc-a069-773e0e9a30a2
+
+
 resource_registry:
   "Cluster::Node": "./resources/node.yaml"
   "Cluster::Group": "./resources/group.yaml"
