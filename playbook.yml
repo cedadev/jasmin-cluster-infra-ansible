@@ -10,3 +10,5 @@
     cluster_environment:
       - "{{ playbook_dir }}/files/environment.yaml"
     cluster_template: "{{ playbook_dir }}/files/resources/cluster.yaml"
+    # We can set the cluster_group_count automatically
+    cluster_params: "{{ cluster_params | combine({'cluster_group_count': cluster_params.cluster_groups|length}) }}"
