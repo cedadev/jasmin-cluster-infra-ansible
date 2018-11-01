@@ -20,8 +20,6 @@
             username: "{{ openstack_username }}"
             password: "{{ openstack_password }}"
             project_name: "{{ openstack_project_name }}"
-          interface: public
-        interface: null
         name: "{{ cluster_name }}"
         state: "{{ cluster_state }}"
         environment:
