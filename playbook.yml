@@ -1,12 +1,52 @@
 ---
 
 - hosts: all
-  roles:
-    - stackhpc.os-shade
-    - stackhpc.cluster-infra
   vars:
-    # Because we are not on pike, we need to use custom Heat resources
-    # Even when we are on pike (?), we might want to do this anyway to customise the resources for JASMIN
-    cluster_environment:
-      - "{{ playbook_dir }}/files/environment.yaml"
-    cluster_template: "{{ playbook_dir }}/files/resources/cluster.yaml"
+    cluster_state: present
+  # Tasks are cribbed from the stackhpc.cluster-infra role
+  #   https://github.com/stackhpc/ansible-role-cluster-infra
+  # However we don't need the inventory generation as we use a dynamic inventory script
+  # We also need to override the Heat environments and resources from the role anyway
+  tasks:
+    - name: Create or update cluster Heat stack
+      register: cluster_stack
+      os_stack:
+        cloud:
+          identity_api_version: 3
+          auth:
+            auth_url: https://kataifi.sweet.jasmin.ac.uk/v3/
+            user_domain_name: jasmin
+            project_domain_name: jasmin
+            username: "{{ openstack_username }}"
+            password: "{{ openstack_password }}"
+            project_name: "{{ openstack_project_name }}"
+        name: "{{ cluster_name }}"
+        state: "{{ cluster_state }}"
+        environment:
+          - "{{ playbook_dir }}/files/environment.yaml"
+        template: "{{ playbook_dir }}/files/resources/cluster.yaml"
+        parameters:
+          cluster_group_count: "{{ cluster_groups | length }}"
+          cluster_groups: "{{ cluster_groups }}"
+          cluster_keypair: "{{ cluster_keypair }}"
+          cluster_network: "{{ cluster_network }}"
+
+    - block:
+        - name: Extract node groups
+          set_fact:
+            cluster_group: "{{ cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'cluster_group') | first }}"
+
+        - name: Extract node objects
+          set_fact:
+            cluster_nodes: "{{ cluster_group.output_value | map(attribute='nodes') | list }}"
+
+        - name: Wait for SSH access to the nodes
+          local_action:
+            module: wait_for
+            host: "{{ item.ip }}"
+            port: 22
+            state: started
+            timeout: "{{ cluster_ssh_timeout }}"
+          with_flattened:
+            - "{{ cluster_nodes }}"
+      when: cluster_state == 'present'
