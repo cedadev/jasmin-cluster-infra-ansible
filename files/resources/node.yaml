@@ -60,6 +60,7 @@ resources:
 #        - image_id: { get_param: image }
 #          volume_size: { get_param: root_volume_size }
 #          delete_on_termination: true
+      user_data_format: RAW
       user_data:
         str_replace:
           template: |
@@ -67,7 +68,7 @@ resources:
             ssh_authorized_keys:
               - %deploy_public_key%
           params:
-            "%deploy_public_key%": { get_attr: [deploy_keypair, public_key] }
+            "%deploy_public_key%": { get_param: [deploy_keypair, public_key] }
 
 
 outputs:
