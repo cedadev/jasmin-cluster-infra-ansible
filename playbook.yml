@@ -11,6 +11,7 @@
     - name: Create or update cluster Heat stack
       register: cluster_stack
       os_stack:
+        # We can't use "cloud:" until this issue is fixed: https://github.com/ansible/ansible/issues/42858
         auth_type: password
         auth:
           auth_url: https://kataifi.sweet.jasmin.ac.uk/v3/
