@@ -11,15 +11,14 @@
     - name: Create or update cluster Heat stack
       register: cluster_stack
       os_stack:
-        cloud:
-          identity_api_version: 3
-          auth:
-            auth_url: https://kataifi.sweet.jasmin.ac.uk/v3/
-            user_domain_name: jasmin
-            project_domain_name: jasmin
-            username: "{{ openstack_username }}"
-            password: "{{ openstack_password }}"
-            project_name: "{{ openstack_project_name }}"
+        auth_type: password
+        auth:
+          auth_url: https://kataifi.sweet.jasmin.ac.uk/v3/
+          user_domain_name: jasmin
+          project_domain_name: jasmin
+          username: "{{ openstack_username }}"
+          password: "{{ openstack_password }}"
+          project_name: "{{ openstack_project_name }}"
         name: "{{ cluster_name }}"
         state: "{{ cluster_state }}"
         environment:
