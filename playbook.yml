@@ -46,7 +46,7 @@
             host: "{{ item.ip }}"
             port: 22
             state: started
-            timeout: "{{ cluster_ssh_timeout }}"
+            timeout: 600
           with_flattened:
             - "{{ cluster_nodes }}"
       when: cluster_state == 'present'

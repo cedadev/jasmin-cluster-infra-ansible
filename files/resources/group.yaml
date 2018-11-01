@@ -59,7 +59,7 @@ resources:
                   { get_param: [cluster_groups, { get_param: group_idx }, name] },
                   '%index%' ]
           image: { get_param: cluster_image }
-          flavor: { get_param: [cluster_groups, { get_param: group_idx }, flavor ] }
+          flavor: { get_param: [cluster_groups, { get_param: group_idx }, flavor] }
           user_keypair: { get_param: cluster_user_keypair }
           deploy_keypair: { get_param: cluster_deploy_keypair }
           network: { get_param: cluster_network }
