@@ -21,9 +21,15 @@ parameters:
     constraints:
       - custom_constraint: glance.image
 
-  cluster_keypair:
+  cluster_user_keypair:
     type: string
-    label: SSH key pair for access to the cluster
+    label: SSH key pair for user access to the cluster
+    constraints:
+      - custom_constraint: nova.keypair
+
+  cluster_deploy_keypair:
+    type: string
+    label: SSH key pair for deployments to the cluster
     constraints:
       - custom_constraint: nova.keypair
 
@@ -54,7 +60,8 @@ resources:
                   '%index%' ]
           image: { get_param: cluster_image }
           flavor: { get_param: [cluster_groups, { get_param: group_idx }, flavor ] }
-          key_name: { get_param: cluster_keypair }
+          user_keypair: { get_param: cluster_user_keypair }
+          deploy_keypair: { get_param: cluster_deploy_keypair }
           network: { get_param: cluster_network }
           root_volume_size: { get_param: [cluster_groups, { get_param: group_idx }, root_volume_size] }
 

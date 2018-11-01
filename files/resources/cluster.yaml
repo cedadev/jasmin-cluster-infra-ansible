@@ -25,7 +25,7 @@ parameters:
 
   cluster_keypair:
     type: string
-    label: SSH key pair for access to the cluster
+    label: SSH key pair for user access to the cluster
     constraints:
       - custom_constraint: nova.keypair
 
@@ -37,6 +37,17 @@ parameters:
 
 
 resources:
+  # Create a known SSH key that can be used for automated deployments to this stack
+  deploy_keypair:
+    type: OS::Nova::KeyPair
+    properties:
+      name:
+        str_replace:
+          template: "%stack_name%-deploy-key"
+          params:
+            "%stack_name%": { get_param: "OS::stack_name" }
+      save_private_key: true
+
   cluster_group:
     type: OS::Heat::ResourceGroup
     properties:
@@ -47,11 +58,15 @@ resources:
           cluster_name: { get_param: "OS::stack_name" }
           cluster_groups: { get_param: cluster_groups }
           cluster_image: { get_param: cluster_image }
-          cluster_keypair: { get_param: cluster_keypair }
           cluster_network: { get_param: cluster_network }
+          cluster_user_keypair: { get_param: cluster_keypair }
+          cluster_deploy_keypair: { get_resource: deploy_keypair }
           group_idx: "%index%"
 
 
 outputs:
   cluster_group:
     value: { get_attr: [cluster_group, group_data] }
+
+  deploy_private_key:
+    value: { get_attr: [deploy_keypair, private_key] }

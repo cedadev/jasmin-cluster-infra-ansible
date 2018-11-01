@@ -23,9 +23,15 @@ parameters:
     constraints:
       - custom_constraint: nova.flavor
 
-  key_name:
+  user_keypair:
     type: string
-    label: SSH key pair for access
+    label: SSH key pair for user access
+    constraints:
+      - custom_constraint: nova.keypair
+
+  deploy_keypair:
+    type: string
+    label: SSH key pair for deployments
     constraints:
       - custom_constraint: nova.keypair
 
@@ -46,7 +52,7 @@ resources:
     properties:
       name: { get_param: name }
       flavor: { get_param: flavor }
-      key_name: { get_param: key_name }
+      key_name: { get_param: user_keypair }
       networks:
         - network: { get_param: network }
       image: { get_param: image }
@@ -54,6 +60,14 @@ resources:
 #        - image_id: { get_param: image }
 #          volume_size: { get_param: root_volume_size }
 #          delete_on_termination: true
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+            ssh_authorized_keys:
+              - %deploy_public_key%
+          params:
+            "%deploy_public_key%": { get_attr: [deploy_keypair, public_key] }
 
 
 outputs:
