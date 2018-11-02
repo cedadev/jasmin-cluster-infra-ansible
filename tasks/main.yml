@@ -1,0 +1,35 @@
+---
+
+- name: Create or update cluster Heat stack
+  register: cluster_stack
+  os_stack:
+    name: "{{ cluster_name }}"
+    state: "{{ cluster_state }}"
+    environment:
+      - "{{ role_path }}/files/environment.yaml"
+    template: "{{ role_path }}/files/resources/cluster.yaml"
+    parameters:
+      cluster_group_count: "{{ cluster_groups | length }}"
+      cluster_groups: "{{ cluster_groups }}"
+      cluster_keypair: "{{ cluster_keypair }}"
+      cluster_network: "{{ cluster_network }}"
+
+- block:
+  - name: Extract node groups
+    set_fact:
+      cluster_group: "{{ cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'cluster_group') | first }}"
+
+  - name: Extract node objects
+    set_fact:
+      cluster_nodes: "{{ cluster_group.output_value | map(attribute='nodes') | list }}"
+
+  - name: Wait for SSH access to the nodes
+    local_action:
+      module: wait_for
+      host: "{{ item.ip }}"
+      port: 22
+      state: started
+      timeout: 600
+    with_flattened:
+      - "{{ cluster_nodes }}"
+  when: cluster_state == 'present'

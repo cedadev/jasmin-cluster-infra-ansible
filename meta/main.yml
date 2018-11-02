@@ -1,0 +1,15 @@
+---
+
+galaxy_info:
+  role_name: jasmin.cluster-infra
+
+  author: Matt Pryor
+  company: Centre for Environmental Data Analysis (CEDA)
+
+  desecription: >
+    Generates OpenStack infrastructure for Cluster-as-a-Service.
+
+  min_ansible_version: 2.7
+
+
+dependencies: []
