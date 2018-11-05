@@ -29,11 +29,9 @@ parameters:
     constraints:
       - custom_constraint: nova.keypair
 
-  deploy_keypair:
+  deploy_public_key:
     type: string
-    label: SSH key pair for deployments
-    constraints:
-      - custom_constraint: nova.keypair
+    label: SSH public key for deployments
 
   network:
     type: string
@@ -68,7 +66,7 @@ resources:
             ssh_authorized_keys:
               - %deploy_public_key%
           params:
-            "%deploy_public_key%": { get_param: [deploy_keypair, public_key] }
+            "%deploy_public_key%": { get_param: deploy_public_key }
 
 
 outputs:

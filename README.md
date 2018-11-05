@@ -11,8 +11,8 @@ For example:
 
 ```yaml
 ---
-- hosts: localhost
-  connection: local
+
+- hosts: openstack
   roles:
     - role: jasmin.cluster-infra
       vars:

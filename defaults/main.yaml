@@ -1,3 +1,13 @@
 ---
 
 cluster_state: present
+cluster_environment:
+  - "{{ role_path }}/files/environment.yaml"
+cluster_template: "{{ role_path }}/files/resources/cluster.yaml"
+cluster_parameters:
+  cluster_group_count: "{{ cluster_groups | length }}"
+  cluster_groups: "{{ cluster_groups }}"
+  cluster_keypair: "{{ cluster_keypair }}"
+  cluster_network: "{{ cluster_network }}"
+
+private_data_dir: "{{ playbook_dir }}"

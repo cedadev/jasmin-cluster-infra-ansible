@@ -48,7 +48,7 @@ resources:
             "%stack_name%": { get_param: "OS::stack_name" }
       save_private_key: true
 
-  cluster_group:
+  node_groups:
     type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: cluster_group_count }
@@ -60,13 +60,13 @@ resources:
           cluster_image: { get_param: cluster_image }
           cluster_network: { get_param: cluster_network }
           cluster_user_keypair: { get_param: cluster_keypair }
-          cluster_deploy_keypair: { get_resource: deploy_keypair }
+          cluster_deploy_public_key: { get_attr: [deploy_keypair, public_key] }
           group_idx: "%index%"
 
 
 outputs:
-  cluster_group:
-    value: { get_attr: [cluster_group, group_data] }
+  node_groups:
+    value: { get_attr: [node_groups, group_data] }
 
   deploy_private_key:
     value: { get_attr: [deploy_keypair, private_key] }

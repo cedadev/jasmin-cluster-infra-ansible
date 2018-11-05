@@ -1,35 +1,43 @@
 ---
 
 - name: Create or update cluster Heat stack
-  register: cluster_stack
   os_stack:
     name: "{{ cluster_name }}"
     state: "{{ cluster_state }}"
-    environment:
-      - "{{ role_path }}/files/environment.yaml"
-    template: "{{ role_path }}/files/resources/cluster.yaml"
-    parameters:
-      cluster_group_count: "{{ cluster_groups | length }}"
-      cluster_groups: "{{ cluster_groups }}"
-      cluster_keypair: "{{ cluster_keypair }}"
-      cluster_network: "{{ cluster_network }}"
+    environment: "{{ cluster_environment }}"
+    template: "{{ cluster_template }}"
+    parameters: "{{ cluster_parameters }}"
+  register: cluster_stack
 
 - block:
-  - name: Extract node groups
-    set_fact:
-      cluster_group: "{{ cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'cluster_group') | first }}"
+    - name: Extract facts from stack
+      set_fact:
+        cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
+        cluster_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
 
-  - name: Extract node objects
-    set_fact:
-      cluster_nodes: "{{ cluster_group.output_value | map(attribute='nodes') | list }}"
+    - name: Wait for access to SSH port on nodes
+      local_action:
+        module: wait_for
+        host: "{{ item.ip }}"
+        port: 22
+        state: started
+        timeout: 600
+      with_flattened: "{{ cluster_node_groups | map(attribute = 'nodes') | list }}"
 
-  - name: Wait for SSH access to the nodes
-    local_action:
-      module: wait_for
-      host: "{{ item.ip }}"
-      port: 22
-      state: started
-      timeout: 600
-    with_flattened:
-      - "{{ cluster_nodes }}"
+    - name: Set private key file fact
+      set_fact:
+        cluster_private_key_file: >
+          {{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(private_data_dir, true) }}/{{ cluster_name }}_ssh_private_key
+
+    - name: Write cluster private key
+      copy:
+        content: "{{ cluster_private_key }}"
+        dest: "{{ cluster_private_key_file }}"
+        mode: 0600
+
+    - name: Build in-memory inventory
+      include_tasks: add_inventory_group.yml
+      with_items: "{{ cluster_node_groups }}"
+      loop_control:
+        loop_var: group
   when: cluster_state == 'present'

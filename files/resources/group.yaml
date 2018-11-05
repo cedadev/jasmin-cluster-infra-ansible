@@ -27,11 +27,9 @@ parameters:
     constraints:
       - custom_constraint: nova.keypair
 
-  cluster_deploy_keypair:
+  cluster_deploy_public_key:
     type: string
-    label: SSH key pair for deployments to the cluster
-    constraints:
-      - custom_constraint: nova.keypair
+    label: SSH public key for deployments to the cluster
 
   cluster_network:
     type: string
@@ -61,7 +59,7 @@ resources:
           image: { get_param: cluster_image }
           flavor: { get_param: [cluster_groups, { get_param: group_idx }, flavor] }
           user_keypair: { get_param: cluster_user_keypair }
-          deploy_keypair: { get_param: cluster_deploy_keypair }
+          deploy_public_key: { get_param: cluster_deploy_public_key }
           network: { get_param: cluster_network }
           root_volume_size: { get_param: [cluster_groups, { get_param: group_idx }, root_volume_size] }
 
@@ -69,5 +67,5 @@ resources:
 outputs:
   group_data:
     value:
-      group: { get_param: [cluster_groups, { get_param: group_idx }, name] }
+      name: { get_param: [cluster_groups, { get_param: group_idx }, name] }
       nodes: { get_attr: [node_group, instance_data] }
