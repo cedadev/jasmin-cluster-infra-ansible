@@ -6,7 +6,8 @@
     groups:
       - cluster
       - "{{ group.name }}"
-    ansible_ssh_host: "{{ node.ip }}"
+    ansible_host: "{{ node.ip }}"
+    ansible_user: "{{ cluster_deploy_user | default('root') }}"
     ansible_ssh_private_key_file: "{{ cluster_private_key_file }}"
   with_items: "{{ group.nodes }}"
   loop_control:
