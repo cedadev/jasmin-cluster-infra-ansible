@@ -2,7 +2,7 @@
 
 parameters:
   # This is the ID of the current CentOS 7 image on JASMIN
-  cluster_image: d2b7e3a8-3dbb-4cfc-a069-773e0e9a30a2
+  cluster_image: d7df64a3-9b2e-4ff2-820f-4481671d1dcf
 
 
 resource_registry:
