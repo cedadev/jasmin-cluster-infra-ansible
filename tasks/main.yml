@@ -15,19 +15,9 @@
         cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
         cluster_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
 
-    - name: Wait for access to SSH port on nodes
-      local_action:
-        module: wait_for
-        host: "{{ item.ip }}"
-        port: 22
-        state: started
-        timeout: 600
-      with_flattened: "{{ cluster_node_groups | map(attribute = 'nodes') | list }}"
-
     - name: Set private key file fact
       set_fact:
-        cluster_private_key_file: >
-          {{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(private_data_dir, true) }}/{{ cluster_name }}_ssh_private_key
+        cluster_private_key_file: "{{ private_data_dir }}/{{ cluster_name }}_ssh_private_key"
 
     - name: Write cluster private key
       copy:
@@ -40,4 +30,12 @@
       with_items: "{{ cluster_node_groups }}"
       loop_control:
         loop_var: group
+
+    # We do this by attempting to ping the nodes
+    - name: Wait for nodes to become accessible
+      ping:
+      delegate_to: "{{ host }}"
+      with_items: "{{ groups['cluster'] }}"
+      loop_control:
+        loop_var: host
   when: cluster_state == 'present'

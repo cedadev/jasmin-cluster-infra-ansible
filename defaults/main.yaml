@@ -10,4 +10,4 @@ cluster_parameters:
   cluster_keypair: "{{ cluster_keypair }}"
   cluster_network: "{{ cluster_network }}"
 
-private_data_dir: "{{ playbook_dir }}"
+private_data_dir: "{{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(playbook_dir, true) }}"
