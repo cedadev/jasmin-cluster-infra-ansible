@@ -33,8 +33,7 @@
 
     # We do this by attempting to ping the nodes
     - name: Wait for nodes to become accessible
-      ping:
-      delegate_to: "{{ host }}"
+      include_tasks: wait_for_host.yml
       with_items: "{{ groups['cluster'] }}"
       loop_control:
         loop_var: host

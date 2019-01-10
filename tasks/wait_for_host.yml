@@ -1,0 +1,9 @@
+---
+
+- name: "Wait for {{ host }} to become available"
+  ping:
+  delegate_to: "{{ host }}"
+  register: host_available
+  until: host_available is succeeded
+  retries: 60
+  delay: 5
