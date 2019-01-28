@@ -6,6 +6,13 @@
       - "{{ group.name }}"
     group_extra_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | map(attribute='extra_groups') | first | default([]) }}"
 
+- name: Determine ProxyJump ssh parameters
+  set_fact:
+    group_jump_params: "-o ProxyJump={{ cluster_gw_user }}@{{ cluster_gw_ip }}"
+  when:
+    - cluster_gw_group is defined
+    - cluster_gw_group != group.name
+
 - name: "Add nodes for group: {{ group.name }}"
   add_host:
     name: "{{ node.name }}"
@@ -13,6 +20,7 @@
     ansible_host: "{{ node.ip }}"
     ansible_user: "{{ cluster_deploy_user | default('root') }}"
     ansible_ssh_private_key_file: "{{ cluster_private_key_file }}"
+    ansible_ssh_common_args: "{{ group_jump_params | default(omit) }}"
   with_items: "{{ group.nodes }}"
   loop_control:
     loop_var: node
