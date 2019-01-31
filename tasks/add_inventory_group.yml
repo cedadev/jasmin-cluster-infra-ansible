@@ -1,11 +1,16 @@
 ---
+- set_fact:
+    group_inventory_groups: 
+      - cluster
+      - "{{ [cluster_name, group.name] | join('_')}}"
+      - "{{ group.name }}"
+    my_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | list }}"
+    group_extra_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | map(attribute='extra_groups') | first | default([]) }}"
 
 - name: "Add nodes for group: {{ group.name }}"
   add_host:
     name: "{{ node.name }}"
-    groups:
-      - cluster
-      - "{{ group.name }}"
+    groups: "{{ group_inventory_groups + group_extra_groups }}"
     ansible_host: "{{ node.ip }}"
     ansible_user: "{{ cluster_deploy_user | default('root') }}"
     ansible_ssh_private_key_file: "{{ cluster_private_key_file }}"
