@@ -4,7 +4,6 @@
       - cluster
       - "{{ [cluster_name, group.name] | join('_')}}"
       - "{{ group.name }}"
-    my_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | list }}"
     group_extra_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | map(attribute='extra_groups') | first | default([]) }}"
 
 - name: "Add nodes for group: {{ group.name }}"
