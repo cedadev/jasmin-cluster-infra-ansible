@@ -5,6 +5,7 @@
     name: "{{ node.name }}"
     groups:
       - cluster
+      - "{{ [cluster_name, group.name] | join('_')}}"
       - "{{ group.name }}"
     ansible_host: "{{ node.ip }}"
     ansible_user: "{{ cluster_deploy_user | default('root') }}"
