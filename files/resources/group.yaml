@@ -48,7 +48,7 @@ resources:
     properties:
       count: { get_param: [cluster_groups, { get_param: group_idx }, num_nodes] }
       resource_def:
-        type: Cluster::Node
+        type: { get_param: [cluster_groups, { get_param: group_idx }, node_resource] }
         properties:
           name:
             list_join:
