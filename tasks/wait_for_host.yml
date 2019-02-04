@@ -1,4 +1,26 @@
 ---
+- name: Wait for access to SSH port on nodes
+  local_action:
+    module: wait_for
+    host: "{{ hostvars[host].ansible_host }}"
+    port: 22
+    state: started
+    timeout: 600
+
+- name: Scan for SSH keys
+  command: ssh-keyscan {{ hostvars[host].ansible_host }}
+  register: keyscan_result
+  changed_when: False
+
+- name: Ensure servers are in SSH known hosts
+  blockinfile:
+    block: |
+      {% for key in keyscan_result.stdout_lines %}
+      {{ key }}
+      {% endfor %}
+    create: true
+    marker: "# {mark} P3-APPLIANCES MANAGED BLOCK FOR {{ cluster_name }}.{{ host }}"
+    path: "~/.ssh/known_hosts"
 
 - name: "Wait for {{ host }} to become available"
   ping:
