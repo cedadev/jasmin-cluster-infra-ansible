@@ -8,7 +8,7 @@
 
 - name: Determine ProxyJump ssh parameters
   set_fact:
-    group_jump_params: "-o ProxyJump={{ cluster_gw_user }}@{{ cluster_gw_ip }}"
+    group_jump_params: "-o StrictHostKeyChecking=false -o ProxyJump={{ cluster_gw_user }}@{{ cluster_gw_ip }}"
   when:
     - cluster_gw_group is defined
     - cluster_gw_group != group.name
