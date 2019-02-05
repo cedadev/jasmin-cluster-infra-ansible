@@ -7,6 +7,10 @@ description: >
 
 
 parameters:
+  node_idx:
+    type: number
+    label: Node index within cluster group
+
   name:
     type: string
     label: The server name
@@ -43,6 +47,14 @@ parameters:
     type: number
     label: Size of volume for root filesystem
 
+  group_node_ports:
+    type: json
+    label: List of primary port resources for all nodes in this group
+
+  primary_ips:
+    type: json
+    label: List of primary IP addresses for all nodes in this group
+
 
 resources:
   server:
@@ -51,8 +63,8 @@ resources:
       name: { get_param: name }
       flavor: { get_param: flavor }
       key_name: { get_param: user_keypair }
-      networks:
-        - network: { get_param: network }
+      networks: 
+        - port: {get_param: [group_node_ports, {get_param: node_idx}]}
       image: { get_param: image }
 #      block_device_mapping_v2:
 #        - image_id: { get_param: image }
@@ -77,4 +89,4 @@ outputs:
     value:
       id: { get_resource: server }
       name: { get_param: name }
-      ip: { get_attr: [server, addresses, { get_param: network }, 0, "addr"] }
+      ip: { get_param: [primary_ips, {get_param: node_idx}]}

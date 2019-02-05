@@ -43,6 +43,17 @@ parameters:
 
 
 resources:
+  port_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: [cluster_groups, {get_param: group_idx}, num_nodes] }
+      resource_def:
+        type: { get_param: [cluster_groups, {get_param: group_idx}, nodenet_resource ] }
+        properties:
+          cluster_network: { get_param: cluster_network }
+          cluster_fips: { get_param: [cluster_groups, {get_param: group_idx}, nodenet_fips ] }
+          node_idx: "%index%"
+
   node_group:
     type: OS::Heat::ResourceGroup
     properties:
@@ -50,6 +61,7 @@ resources:
       resource_def:
         type: { get_param: [cluster_groups, { get_param: group_idx }, node_resource] }
         properties:
+          node_idx: "%index%"
           name:
             list_join:
               - '-'
@@ -62,6 +74,8 @@ resources:
           deploy_public_key: { get_param: cluster_deploy_public_key }
           network: { get_param: cluster_network }
           root_volume_size: { get_param: [cluster_groups, { get_param: group_idx }, root_volume_size] }
+          group_node_ports: { get_attr: [port_group, primary_port] }
+          primary_ips: { get_attr: [port_group, primary_ip] }
 
 
 outputs:
