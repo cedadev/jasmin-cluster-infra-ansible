@@ -6,6 +6,8 @@
     port: 22
     state: started
     timeout: 600
+  when: 
+    - cluster_gw_group is not defined or host in groups[cluster_gw_group]
 
 - name: Scan for SSH keys
   command: ssh-keyscan {{ hostvars[host].ansible_host }}
