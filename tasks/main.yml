@@ -15,11 +15,13 @@
         cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
         cluster_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
 
-    - name: Extract facts for cluster gateway host
+    - name: Extract facts for cluster gateway host from cluster stack
       set_fact:
-        cluster_gw_user: "{{ cluster_parameters.cluster_groups | selectattr('name', 'equalto', cluster_gw_group) | map(attribute='user') | join }}"
+        cluster_gw_user: "{{ cluster_parameters.cluster_groups | selectattr('name', 'equalto', cluster_gw_group) | map(attribute='user') | first }}"
         cluster_gw_ip: "{{ (cluster_node_groups | selectattr('name', 'equalto', cluster_gw_group) | first).nodes | map(attribute='ip') | first }}"
-      when: cluster_gw_group is defined
+      when:
+        - cluster_gw_group is defined
+        - cluster_gw_user is not defined or cluster_gw_ip is not defined
 
     - name: Set private key file fact
       set_fact:
