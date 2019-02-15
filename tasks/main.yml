@@ -3,6 +3,8 @@
 - name: Create or update cluster Heat stack
   os_stack:
     name: "{{ cluster_name }}"
+    auth_type: "{{ cluster_auth_type or omit }}"
+    auth: "{{ cluster_auth or omit }}"
     state: "{{ cluster_state }}"
     environment: "{{ cluster_environment }}"
     template: "{{ cluster_template }}"
