@@ -9,6 +9,9 @@
     - cluster_gw_group is defined
     - host not in groups[cluster_gw_group]
 
+- name: Purge host IP from ssh known hosts
+  command: ssh-keygen -R "{{ hostvars[host].ansible_host }}"
+
 - name: Wait for access to SSH port on nodes
   wait_for:
     host: "{{ hostvars[host].ansible_host }}"
