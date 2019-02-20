@@ -39,6 +39,13 @@
       loop_control:
         loop_var: group
 
+    - name: Select gateway host where group is designated
+      set_fact:
+        cluster_gw_host: "{{ groups[cluster_gw_group] | first }}"
+      when:
+        - cluster_gw_group is defined
+        - cluster_gw_host is not defined
+
     # We do this by attempting to ping the nodes
     - name: Wait for nodes to become accessible
       include_tasks: wait_for_host.yml

@@ -1,18 +1,27 @@
 ---
+- set_fact:
+    cluster_scan_host: "{{ inventory_hostname }}"
+
+- set_fact:
+    cluster_scan_host: "{{ cluster_gw_host }}"
+  when:
+    - cluster_gw_host is defined
+    - cluster_gw_group is defined
+    - host not in groups[cluster_gw_group]
+
 - name: Wait for access to SSH port on nodes
-  local_action:
-    module: wait_for
+  wait_for:
     host: "{{ hostvars[host].ansible_host }}"
     port: 22
     state: started
     timeout: 600
-  when: 
-    - cluster_gw_group is not defined or host in groups[cluster_gw_group]
+  delegate_to: "{{ cluster_scan_host }}"
 
 - name: Scan for SSH keys
   command: ssh-keyscan {{ hostvars[host].ansible_host }}
   register: keyscan_result
   changed_when: False
+  delegate_to: "{{ cluster_scan_host }}"
 
 - name: Ensure servers are in SSH known hosts
   blockinfile:
