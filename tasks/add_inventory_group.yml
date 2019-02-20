@@ -6,9 +6,15 @@
       - "{{ group.name }}"
     group_extra_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | map(attribute='extra_groups') | first | default([]) }}"
 
+- set_fact:
+    gw_host_key: "{{ hostvars[groups[cluster_gw_group] | first]['ansible_ssh_private_key_file'] }}"
+  when:
+    - cluster_gw_group is defined
+    - cluster_gw_group != group.name
+
 - name: Determine ProxyJump ssh parameters
   set_fact:
-    group_jump_params: "-o StrictHostKeyChecking=no -o ProxyCommand='ssh -i {{ cluster_private_key_file }} -W %h:%p {{ cluster_gw_user }}@{{ cluster_gw_ip }}'"
+    group_jump_params: "-o StrictHostKeyChecking=no -o ProxyCommand='ssh -o StrictHostKeyChecking=no -i {{ gw_host_key }} -W %h:%p {{ cluster_gw_user }}@{{ cluster_gw_ip }}'"
   when:
     - cluster_gw_group is defined
     - cluster_gw_group != group.name
