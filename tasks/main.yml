@@ -52,4 +52,4 @@
       with_items: "{{ groups['cluster'] }}"
       loop_control:
         loop_var: host
-  when: cluster_state == 'present'
+  when: cluster_state == 'present' and not stack_update_only
