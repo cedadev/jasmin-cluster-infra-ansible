@@ -1,5 +1,19 @@
 ---
-- debug: var=home_dir
+- debug:
+    msg: "{{ lookup('env', 'HOME') }}"
+
+- debug:
+    msg: "{{ lookup('env', 'HOME') }}"
+  become: yes
+
+- debug:
+    msg: "{{ lookup('env', 'HOME') }}"
+  delegate_to: "{{ inventory_hostname }}"
+  become: yes
+
+- local_action: command echo ~
+  register: local_home_dir
+- debug: var=local_home_dir
 
 - set_fact:
     cluster_scan_host: "{{ inventory_hostname }}"
