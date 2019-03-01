@@ -1,6 +1,8 @@
 ---
 
 cluster_state: present
+cluster_auth_type:
+cluster_auth:
 cluster_environment:
   - "{{ role_path }}/files/environment.yaml"
 cluster_template: "{{ role_path }}/files/resources/cluster.yaml"
