@@ -1,6 +1,4 @@
 ---
-- debug: var=home_dir
-
 - set_fact:
     cluster_scan_host: "{{ inventory_hostname }}"
 
