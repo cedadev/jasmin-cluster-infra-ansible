@@ -14,3 +14,5 @@ cluster_parameters:
 
 private_data_dir: "{{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(playbook_dir, true) }}"
 home_dir: "{{ lookup('env', 'HOME') }}"
+
+cluster_stack_update_only: false
