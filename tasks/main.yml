@@ -3,6 +3,8 @@
 - name: Create or update cluster Heat stack
   os_stack:
     name: "{{ cluster_name }}"
+    auth_type: "{{ cluster_auth_type or omit }}"
+    auth: "{{ cluster_auth or omit }}"
     state: "{{ cluster_state }}"
     environment: "{{ cluster_environment }}"
     template: "{{ cluster_template }}"
@@ -52,4 +54,4 @@
       with_items: "{{ groups['cluster'] }}"
       loop_control:
         loop_var: host
-  when: cluster_state == 'present' and not stack_update_only
+  when: cluster_state == 'present' and not cluster_stack_update_only

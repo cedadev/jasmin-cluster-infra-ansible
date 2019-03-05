@@ -9,8 +9,14 @@
     - cluster_gw_group is defined
     - host not in groups[cluster_gw_group]
 
+- name: Check for known hosts file
+  stat:
+    path: "{{ home_dir }}/.ssh/known_hosts"
+  register: known_hosts_file
+
 - name: Purge host IP from ssh known hosts
   command: ssh-keygen -R "{{ hostvars[host].ansible_host }}"
+  when: known_hosts_file.stat.exists
 
 - name: Wait for access to SSH port on nodes
   wait_for:
@@ -34,7 +40,7 @@
       {% endfor %}
     create: true
     marker: "# {mark} P3-APPLIANCES MANAGED BLOCK FOR {{ cluster_name }}.{{ host }}"
-    path: "~/.ssh/known_hosts"
+    path: "{{ home_dir }}/.ssh/known_hosts"
 
 - name: "Wait for {{ host }} to become available"
   ping:
