@@ -46,6 +46,7 @@ parameters:
   root_volume_size:
     type: number
     label: Size of volume for root filesystem
+    default: 0
 
   group_node_ports:
     type: json
