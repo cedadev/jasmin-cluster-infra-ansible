@@ -83,3 +83,8 @@ outputs:
     value:
       name: { get_param: [cluster_groups, { get_param: group_idx }, name] }
       nodes: { get_attr: [node_group, instance_data] }
+      info:
+        str_replace:
+          template: { get_param: [cluster_groups, { get_param: group_idx }, info] }
+          params:
+            "\"$PRIMARY_IPS\"": { get_attr: [port_group, primary_ip] }

@@ -70,3 +70,6 @@ outputs:
 
   deploy_private_key:
     value: { get_attr: [deploy_keypair, private_key] }
+
+  info:
+    value: { get_attr: [node_groups, group_data, info] }
