@@ -78,6 +78,17 @@ one of the listed groups of the cluster that has been configured with an
 externally-addressible IP.  One or more of the hosts in this group will be
 used as `ProxyJump` hosts for the rest of the cluster.
 
+## Categorising deployments using cluster tags
+
+In an environment where multiple deployments are active, they can easily
+be categorised according to type (or anything else) by specifying
+a `cluster_tag`.  These tags translate to Heat stack tags, and all stacks
+with a given tag can be listed together, for example using:
+
+```
+heat stack list --tags storage
+```
+
 ## Bringing it all together
 
 ```yaml
@@ -89,7 +100,7 @@ used as `ProxyJump` hosts for the rest of the cluster.
         cluster_deploy_user: 'centos'
         cluster_network: "caastest-U-internal"
         cluster_groups:
-          - name: "fip"
+          - name: "ext"
             flavor: "j1.small"
             image: "centos-7-20190104"
             num_nodes: 1
@@ -104,7 +115,8 @@ used as `ProxyJump` hosts for the rest of the cluster.
             num_nodes: 1
             node_resource: "Cluster::Node" 
             nodenet_resource: "Cluster::NodeNet1" 
-        cluster_gw_group: "fip"
+        cluster_gw_group: "ext"
+        cluster_tag: "test"
 ```
 
 Inspiration was taken from the StackHPC cluster-infra role: https://github.com/stackhpc/ansible-role-cluster-infra.
