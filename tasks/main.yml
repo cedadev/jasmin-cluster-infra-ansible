@@ -61,8 +61,19 @@
 
     # We do this by attempting to ping the nodes
     - name: Wait for nodes to become accessible
-      include_tasks: wait_for_host.yml
-      with_items: "{{ groups['cluster'] }}"
-      loop_control:
-        loop_var: host
+      block:
+        # First, wait for hosts in the gateway group
+        - name: Wait for gateway hosts
+          include_tasks: wait_for_hosts.yml
+          vars:
+            cluster_scan_host: "{{ inventory_hostname }}"
+            hosts: "{{ groups[cluster_gw_group] }}"
+          when: cluster_gw_group is defined
+
+        # Then wait for the rest of the cluster hosts
+        - name: Wait for cluster hosts
+          include_tasks: wait_for_hosts.yml
+          vars:
+            cluster_scan_host: "{{ cluster_gw_host | default(inventory_hostname) }}"
+            hosts: "{{ query('inventory_hostnames', 'cluster:!' + cluster_gw_group) }}"
   when: cluster_state == 'present' and not cluster_stack_update_only
