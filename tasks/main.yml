@@ -16,7 +16,7 @@
 # - https://github.com/ansible/ansible/pull/53757
 # - https://review.openstack.org/643195
 - name: Fixup cluster tags
-  command: "openstack stack update --existing --tags {{ cluster_tag }} {{ cluster_name }}"
+  command: "openstack stack update --wait --existing --tags {{ cluster_tag }} {{ cluster_name }}"
   when:
     - cluster_tag is defined
     - cluster_state == 'present'
