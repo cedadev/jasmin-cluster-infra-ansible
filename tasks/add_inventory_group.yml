@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    group_inventory_groups: 
+    group_inventory_groups:
       - cluster
       - "{{ [cluster_name, group.name] | join('_')}}"
       - "{{ group.name }}"
@@ -12,9 +12,9 @@
     - cluster_gw_group is defined
     - cluster_gw_group != group.name
 
-- name: Determine ProxyJump ssh parameters
+- name: Determine SSH proxy command
   set_fact:
-    group_jump_params: "-o ProxyCommand='ssh -i {{ gw_host_key }} -W %h:%p {{ cluster_gw_user }}@{{ cluster_gw_ip }}'"
+    group_proxy_command: "-o ProxyCommand='ssh -i {{ gw_host_key }} -o UserKnownHostsFile={{ cluster_known_hosts_file }} -W %h:%p {{ cluster_gw_user }}@{{ cluster_gw_ip }}'"
   when:
     - cluster_gw_group is defined
     - cluster_gw_group != group.name
@@ -26,7 +26,8 @@
     ansible_host: "{{ node.ip }}"
     ansible_user: "{{ cluster_deploy_user | default('root') }}"
     ansible_ssh_private_key_file: "{{ cluster_private_key_file }}"
-    ansible_ssh_common_args: "{{ group_jump_params | default(omit) }}"
+    # Include the SSH known hosts file
+    ansible_ssh_common_args: "-o UserKnownHostsFile={{ cluster_known_hosts_file }} {{ group_proxy_command | default('') }}"
   with_items: "{{ group.nodes }}"
   loop_control:
     loop_var: node

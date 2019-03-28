@@ -17,3 +17,5 @@ private_data_dir: "{{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(playbook_
 home_dir: "{{ lookup('env', 'HOME') }}"
 
 cluster_stack_update_only: false
+
+openstack_project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
