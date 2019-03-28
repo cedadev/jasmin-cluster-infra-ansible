@@ -22,6 +22,17 @@
     - cluster_state == 'present'
 
 - block:
+    - name: Find OpenStack project ID
+      block:
+        - name: Find project ID from token
+          command: openstack token issue -f value -c project_id
+          register: openstack_token_cmd
+
+        - name: Set openstack_project_id fact
+          set_fact:
+            openstack_project_id: "{{ openstack_token_cmd.stdout }}"
+      when: not openstack_project_id
+
     - name: Extract facts from stack
       set_fact:
         cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
@@ -36,9 +47,10 @@
         - cluster_gw_group is defined
         - cluster_gw_user is not defined or cluster_gw_ip is not defined
 
-    - name: Set private key file fact
+    - name: Set facts for private key and known_hosts files
       set_fact:
-        cluster_private_key_file: "{{ private_data_dir }}/{{ cluster_name }}_ssh_private_key"
+        cluster_private_key_file: "{{ private_data_dir }}/{{ openstack_project_id }}_{{ cluster_name }}_ssh_private_key"
+        cluster_known_hosts_file: "{{ home_dir }}/.ssh/known_hosts.{{ openstack_project_id }}.{{ cluster_name }}"
 
     - name: Write cluster private key
       copy:

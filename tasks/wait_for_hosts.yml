@@ -2,11 +2,11 @@
 
 - name: Check for known hosts file
   stat:
-    path: "{{ home_dir }}/.ssh/known_hosts"
+    path: "{{ cluster_known_hosts_file }}"
   register: known_hosts_file
 
 - name: Purge host IP from ssh known hosts
-  command: ssh-keygen -R "{{ hostvars[host].ansible_host }}"
+  command: ssh-keygen -R "{{ hostvars[host].ansible_host }}" -f "{{ cluster_known_hosts_file }}"
   when: known_hosts_file.stat.exists
   loop: "{{ hosts }}"
   loop_control:
@@ -40,7 +40,7 @@
       {% endfor %}
     create: true
     marker: "# {mark} P3-APPLIANCES MANAGED BLOCK FOR {{ cluster_name }}.{{ item[0] }}"
-    path: "{{ home_dir }}/.ssh/known_hosts"
+    path: "{{ cluster_known_hosts_file }}"
   loop: "{{ hosts | zip(keyscan_results.results) | list }}"
   loop_control:
     label: "{{ item[0] }}"
