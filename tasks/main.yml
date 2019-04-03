@@ -49,7 +49,7 @@
 
     - name: Set facts for private key and known_hosts files
       set_fact:
-        cluster_private_key_file: "{{ private_data_dir }}/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
+        cluster_private_key_file: "{{ home_dir }}/.ssh/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
         cluster_known_hosts_file: "{{ home_dir }}/.ssh/known_hosts.{{ openstack_project_id }}.{{ cluster_name }}"
 
     - name: Write cluster private key
