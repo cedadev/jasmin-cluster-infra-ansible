@@ -52,6 +52,12 @@
         cluster_private_key_file: "{{ home_dir }}/.ssh/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
         cluster_known_hosts_file: "{{ home_dir }}/.ssh/known_hosts.{{ openstack_project_id }}.{{ cluster_name }}"
 
+    - name: "Ensure {{ home_dir }}/.ssh exists"
+      file:
+        path: "{{ home_dir }}/.ssh"
+        state: directory
+        mode: 0700
+
     - name: Write cluster private key
       copy:
         content: "{{ cluster_private_key }}"
