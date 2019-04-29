@@ -1,27 +1,52 @@
 ---
 
-- name: Create or update cluster Heat stack
-  os_stack:
-    name: "{{ cluster_name }}"
-    auth_type: "{{ cluster_auth_type or omit }}"
-    auth: "{{ cluster_auth or omit }}"
-    state: "{{ cluster_state }}"
-    environment: "{{ cluster_environment }}"
-    template: "{{ cluster_template }}"
-    parameters: "{{ cluster_parameters }}"
-    tag: "{{ cluster_tag | default(omit) }}"
-  register: cluster_stack
+- name: Create, update or delete cluster Heat stack
+  block:
+    - name: Create or update cluster Heat stack
+      os_stack:
+        name: "{{ cluster_name }}"
+        auth_type: "{{ cluster_auth_type or omit }}"
+        auth: "{{ cluster_auth or omit }}"
+        state: "{{ cluster_state }}"
+        environment: "{{ cluster_environment }}"
+        template: "{{ cluster_template }}"
+        parameters: "{{ cluster_parameters }}"
+        tag: "{{ cluster_tag | default(omit) }}"
+      register: cluster_stack
 
-# Hack pending outcome of:
-# - https://github.com/ansible/ansible/pull/53757
-# - https://review.openstack.org/643195
-- name: Fixup cluster tags
-  command: "openstack stack update --wait --existing --tags {{ cluster_tag }} {{ cluster_name }}"
-  when:
-    - cluster_tag is defined
-    - cluster_state == 'present'
+    # Hack pending outcome of:
+    # - https://github.com/ansible/ansible/pull/53757
+    # - https://review.openstack.org/643195
+    - name: Fixup cluster tags
+      command: "openstack stack update --wait --existing --tags {{ cluster_tag }} {{ cluster_name }}"
+      when:
+        - cluster_tag is defined
+        - cluster_state == 'present'
 
-- name: Configure cluster inventory
+    - name: Extract facts from stack outputs
+      set_fact:
+        cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
+        cluster_ssh_user: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_user') | first).output_value }}"
+        cluster_ssh_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
+      when: cluster_state == 'present'
+  when: cluster_stack_update
+
+- name: Extract facts from existing stack
+  block:
+    - name: Get stack outputs
+      os_stack_outputs:
+        stack: "{{ cluster_name }}"
+        auth_type: "{{ cluster_auth_type or omit }}"
+        auth: "{{ cluster_auth or omit }}"
+
+    - name: Extract facts from stack outputs
+      set_fact:
+        cluster_node_groups: "{{ openstack_stack_outputs.node_groups }}"
+        cluster_ssh_user: "{{ openstack_stack_outputs.deploy_user }}"
+        cluster_ssh_private_key: "{{ openstack_stack_outputs.deploy_private_key }}"
+  when: not cluster_stack_update
+
+- name: Populate cluster inventory
   block:
     - name: Find OpenStack project ID
       block:
@@ -33,12 +58,6 @@
           set_fact:
             openstack_project_id: "{{ openstack_token_cmd.stdout }}"
       when: not openstack_project_id
-
-    - name: Extract facts from stack outputs
-      set_fact:
-        cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
-        cluster_ssh_user: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_user') | first).output_value }}"
-        cluster_ssh_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
 
     - name: Set facts for private key and known_hosts files
       set_fact:
@@ -114,4 +133,6 @@
         # Use the gateway host if given, otherwise the current inventory host
         cluster_ssh_keyscan_host: "{{ cluster_gw_inventory_hostname | default(inventory_hostname) }}"
         hosts: "{{ cluster_non_gateway_node_groups | map(attribute='nodes') | flatten | map(attribute='name') | list }}"
-  when: cluster_state == 'present' and not cluster_stack_update_only
+  when:
+    - cluster_state == 'present'
+    - cluster_populate_inventory

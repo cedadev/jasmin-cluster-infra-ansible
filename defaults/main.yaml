@@ -16,6 +16,7 @@ cluster_parameters:
 
 home_dir: "{{ lookup('env', 'HOME') }}"
 
-cluster_stack_update_only: false
+cluster_stack_update: true
+cluster_populate_inventory: true
 
 openstack_project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
