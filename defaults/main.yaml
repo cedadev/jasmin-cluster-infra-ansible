@@ -12,8 +12,8 @@ cluster_parameters:
   cluster_keypair: "{{ cluster_keypair }}"
   cluster_network: "{{ cluster_network }}"
   cluster_image: "{{ cluster_image }}"
+  cluster_deploy_user: "{{ cluster_deploy_user | default('root') }}"
 
-private_data_dir: "{{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(playbook_dir, true) }}"
 home_dir: "{{ lookup('env', 'HOME') }}"
 
 cluster_stack_update_only: false

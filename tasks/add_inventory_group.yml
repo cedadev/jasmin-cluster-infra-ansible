@@ -1,33 +1,25 @@
 ---
-- set_fact:
-    group_inventory_groups:
-      - cluster
-      - "{{ [cluster_name, group.name] | join('_')}}"
-      - "{{ group.name }}"
-    group_extra_groups: "{{ cluster_groups | selectattr('name', 'equalto', group.name) | map(attribute='extra_groups') | first | default([]) }}"
 
-- set_fact:
-    gw_host_key: "{{ hostvars[groups[cluster_gw_group] | first]['ansible_ssh_private_key_file'] }}"
-  when:
-    - cluster_gw_group is defined
-    - cluster_gw_group != group.name
-
-- name: Determine SSH proxy command
+- name: Get inventory groups for node group
   set_fact:
-    group_proxy_command: "-o ProxyCommand='ssh -i {{ gw_host_key }} -o UserKnownHostsFile={{ cluster_known_hosts_file }} -W %h:%p {{ cluster_gw_user }}@{{ cluster_gw_ip }}'"
-  when:
-    - cluster_gw_group is defined
-    - cluster_gw_group != group.name
+    node_group_default_groups:
+      - cluster
+      - "{{ node_group.name }}"
+      - "{{ cluster_name }}_{{ node_group.name }}"
+    node_group_inventory_groups: "{{ node_group.inventory_groups | default([], true) }}"
 
-- name: "Add nodes for group: {{ group.name }}"
+- name: Add nodes for node group
   add_host:
     name: "{{ node.name }}"
-    groups: "{{ group_inventory_groups + group_extra_groups }}"
+    groups: "{{ node_group_default_groups + node_group_inventory_groups }}"
     ansible_host: "{{ node.ip }}"
-    ansible_user: "{{ cluster_deploy_user | default('root') }}"
-    ansible_ssh_private_key_file: "{{ cluster_private_key_file }}"
+    ansible_user: "{{ cluster_ssh_user }}"
+    ansible_ssh_private_key_file: "{{ cluster_ssh_private_key_file }}"
     # Include the SSH known hosts file
-    ansible_ssh_common_args: "-o UserKnownHostsFile={{ cluster_known_hosts_file }} {{ group_proxy_command | default('') }}"
-  with_items: "{{ group.nodes }}"
+    # If there is a gateway proxy command set, use that also
+    #   Note that the gateway group is processed before the proxy command is set
+    ansible_ssh_common_args: "-o UserKnownHostsFile={{ cluster_ssh_known_hosts_file }} {{ cluster_gw_ssh_proxy_command | default('') }}"
+  loop: "{{ node_group.nodes }}"
   loop_control:
     loop_var: node
+    label: "{{ node.name }}"

@@ -23,6 +23,10 @@ parameters:
     constraints:
       - custom_constraint: glance.image
 
+  cluster_deploy_user:
+    type: string
+    label: The name of the SSH user for the given image.
+
   cluster_keypair:
     type: string
     label: SSH key pair for user access to the cluster
@@ -67,6 +71,9 @@ resources:
 outputs:
   node_groups:
     value: { get_attr: [node_groups, group_data] }
+
+  deploy_user:
+    value: { get_param: cluster_deploy_user }
 
   deploy_private_key:
     value: { get_attr: [deploy_keypair, private_key] }
