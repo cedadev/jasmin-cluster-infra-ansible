@@ -2,6 +2,18 @@
 
 - name: Create, update or delete cluster Heat stack
   block:
+    # A stack update won't reconcile problems unless it knows about them
+    # It doesn't know about them unless a stack check has been run
+    - name: Check status of cluster Heat stack
+      os_stack_check:
+        name: "{{ cluster_name }}"
+        auth_type: "{{ cluster_auth_type or omit }}"
+        auth: "{{ cluster_auth or omit }}"
+      # We don't care if the check was successful or not
+      # The next step is to reconcile problems anyway
+      ignore_errors: true
+      when: cluster_state == 'present'
+
     - name: Create or update cluster Heat stack
       os_stack:
         name: "{{ cluster_name }}"
