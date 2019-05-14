@@ -23,3 +23,11 @@
   loop_control:
     loop_var: node
     label: "{{ node.name }}"
+
+- name: Set stored facts for nodes in node group
+  set_fact:
+    "{{ item.1.key }}": "{{ item.1.value }}"
+  delegate_to: "{{ item.0.name }}"
+  loop: "{{ node_group.nodes | product(node_group.facts | default({}, true) | dict2items) | list }}"
+  loop_control:
+    label: "{{ item.0.name }}, {{ item.1.key }}"
