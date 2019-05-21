@@ -4,6 +4,7 @@
   set_fact:
     node_group_default_groups:
       - cluster
+      - "cluster_{{ cluster_name }}"
       - "{{ node_group.name }}"
       - "{{ cluster_name }}_{{ node_group.name }}"
     node_group_inventory_groups: "{{ node_group.inventory_groups | default([], true) }}"
