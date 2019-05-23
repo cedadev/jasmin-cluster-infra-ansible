@@ -146,5 +146,5 @@
         cluster_ssh_keyscan_host: "{{ cluster_gw_inventory_hostname | default(inventory_hostname) }}"
         hosts: "{{ cluster_non_gateway_node_groups | map(attribute='nodes') | flatten | map(attribute='name') | list }}"
   when:
-    - cluster_state == 'present'
+    - cluster_node_groups is defined
     - cluster_populate_inventory
