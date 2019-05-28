@@ -64,6 +64,10 @@
         cluster_ssh_user: "{{ openstack_stack_outputs.deploy_user }}"
         cluster_ssh_private_key: "{{ openstack_stack_outputs.deploy_private_key }}"
 
-    # Always populate the inventory when not updating the stack
     - include_tasks: populate_inventory.yml
-  when: not cluster_stack_update
+  when:
+    # If cluster_state is absent, there is nothing to do
+    - cluster_state == 'present'
+    - not cluster_stack_update
+    # If not populating the inventory, there is no point in reading the stack
+    - cluster_populate_inventory
