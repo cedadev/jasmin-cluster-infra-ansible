@@ -66,8 +66,6 @@
 
     - include_tasks: populate_inventory.yml
   when:
-    # If cluster_state is absent, there is nothing to do
-    - cluster_state == 'present'
     - not cluster_stack_update
     # If not populating the inventory, there is no point in reading the stack
     - cluster_populate_inventory
