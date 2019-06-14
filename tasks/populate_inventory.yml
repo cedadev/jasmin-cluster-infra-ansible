@@ -55,7 +55,7 @@
 
     - name: Set cluster gateway proxy command
       set_fact:
-        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -i {{ cluster_gw_ssh_private_key_file }} -o UserKnownHostsFile={{ cluster_gw_ssh_known_hosts_file }} -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
+        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -A -i {{ cluster_gw_ssh_private_key_file }} -o UserKnownHostsFile={{ cluster_gw_ssh_known_hosts_file }} -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
   when:
     # If a proxy command has already been specified, there is nothing to do
     - cluster_gw_group is defined

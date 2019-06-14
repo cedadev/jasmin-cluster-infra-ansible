@@ -19,7 +19,7 @@
     # Include the SSH known hosts file
     # If there is a gateway proxy command set, use that also
     #   Note that the gateway group is processed before the proxy command is set
-    ansible_ssh_common_args: "-o ForwardAgent=yes -o UserKnownHostsFile={{ cluster_ssh_known_hosts_file }} {{ cluster_gw_ssh_proxy_command | default('') }}"
+    ansible_ssh_common_args: "-A -o UserKnownHostsFile={{ cluster_ssh_known_hosts_file }} {{ cluster_gw_ssh_proxy_command | default('') }}"
   loop: "{{ node_group.nodes }}"
   loop_control:
     loop_var: node
