@@ -1,7 +1,6 @@
 ---
 resource_registry:
   "Cluster::Node": "./resources/node.yaml"
-  "Cluster::NodeWithVolume": "./resources/node-with-volume.yaml"
   "Cluster::Group": "./resources/group.yaml"
 
   # Node network configuration: JASMIN use cases envisage a single

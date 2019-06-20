@@ -1,23 +1,26 @@
 ---
-heat_template_version: 2016-04-08
+heat_template_version: queens
+
 
 description: >
-  Heat stack template for a stack containing one Neutron port which is on
-  a named network and subnet. A pre-existing floating IP is associated with the port.
+  Resource for a port on a named network with a pre-existing floating IP associated.
+
 
 parameters:
-  node_idx:
-    type: number
-    label: Node index within cluster group
   cluster_network:
     type: string
     label: Network to which the nodes should be attached
     constraints:
       - custom_constraint: neutron.network
-  cluster_fips:
+
+  cluster_group:
     type: json
-    label: List of UUIDs of prealloacted floating IPs
-    default: []
+    label: Dictionary of properties for the node group
+
+  node_idx:
+    type: number
+    label: Node index within group
+
 
 resources:
   port:
@@ -28,29 +31,14 @@ resources:
   floating_ip_association:
     type: OS::Neutron::FloatingIPAssociation
     properties:
-      floatingip_id: { get_param: [ cluster_fips, {get_param: node_idx}, uuid ] }
+      floatingip_id: { get_param: [cluster_group, nodenet_fips, { get_param: node_idx }, uuid] }
       port_id: { get_resource: port }
-      fixed_ip_address: { get_attr: [ port, fixed_ips, 0, ip_address ] }
+      fixed_ip_address: { get_attr: [port, fixed_ips, 0, ip_address] }
+
 
 outputs:
   OS::stack_id:
-    description: The network list
-    value:
-      - port: { get_resource: port }
-
-  networks:
-    description: The network list
-    value:
-      - port: { get_resource: port }
-
-  primary_port: 
-    description: Network port resources for the primary port as a scalar
     value: { get_resource: port }
 
-  internal_ip:
-    description: ID of the IP assigned on the named cluster network
-    value: { get_attr: [ port, fixed_ips, 0, ip_address ] }
-
   primary_ip:
-    description: ID of the Neutron floating IP
-    value: { get_param: [ cluster_fips, {get_param: node_idx}, ip ] }
+    value: { get_param: [cluster_group, nodenet_fips, { get_param: node_idx }, ip] }

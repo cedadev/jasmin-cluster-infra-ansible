@@ -1,5 +1,5 @@
 ---
-heat_template_version: 2016-04-08
+heat_template_version: queens
 
 
 description: >
@@ -7,47 +7,35 @@ description: >
 
 
 parameters:
-  node_idx:
-    type: number
-    label: Node index within cluster group
-
-  name:
+  cluster_name:
     type: string
-    label: The server name
+    label: The name of the cluster
 
-  image:
+  cluster_image:
     type: string
-    label: The image to use
+    label: The image to use for cluster nodes (must be CentOS 7)
     constraints:
       - custom_constraint: glance.image
 
-  flavor:
+  cluster_user_keypair:
     type: string
-    label: The flavor to use
-    constraints:
-      - custom_constraint: nova.flavor
-
-  user_keypair:
-    type: string
-    label: SSH key pair for user access
+    label: SSH key pair for user access to the cluster
     constraints:
       - custom_constraint: nova.keypair
 
-  deploy_public_key:
+  cluster_deploy_public_key:
     type: string
-    label: SSH public key for deployments
+    label: SSH public key for deployments to the cluster
 
-  network:
-    type: string
-    label: Private network to use
-    constraints:
-      - custom_constraint: neutron.network
+  cluster_group:
+    type: json
+    label: Dictionary of properties for the node group
 
-  root_volume_size:
+  node_idx:
     type: number
-    label: Size of volume for root filesystem
+    label: Node index within group
 
-  group_node_ports:
+  node_ports:
     type: json
     label: List of primary port resources for all nodes in this group
 
@@ -56,20 +44,51 @@ parameters:
     label: List of primary IP addresses for all nodes in this group
 
 
+conditions:
+  # It would be great to use a resource group to create an arbitrary number
+  # of volumes, but it takes us past the default maximum nesting depth
+  # So the hack is to allow the creation of up to a certain number of volumes
+  # using static definitions
+  volume_1:
+    yaql:
+      expression: $.data.get('additional_volumes', []).len() >= 1
+      data: { get_param: cluster_group }
+
+  volume_2:
+    yaql:
+      expression: $.data.get('additional_volumes', []).len() >= 2
+      data: { get_param: cluster_group }
+
+  volume_3:
+    yaql:
+      expression: $.data.get('additional_volumes', []).len() >= 3
+      data: { get_param: cluster_group }
+
+
 resources:
+  server_name:
+    type: OS::Heat::Value
+    properties:
+      value:
+        list_join:
+          - '-'
+          - - { get_param: cluster_name }
+            - { get_param: [cluster_group, name] }
+            # list_join requires that we convert the int to a string
+            - str_replace:
+                template: "%node_idx%"
+                params:
+                  "%node_idx%": { get_param: node_idx }
+
   server:
     type: OS::Nova::Server
     properties:
-      name: { get_param: name }
-      flavor: { get_param: flavor }
-      key_name: { get_param: user_keypair }
-      networks: 
-        - port: {get_param: [group_node_ports, {get_param: node_idx}]}
-      image: { get_param: image }
-#      block_device_mapping_v2:
-#        - image_id: { get_param: image }
-#          volume_size: { get_param: root_volume_size }
-#          delete_on_termination: true
+      name: { get_attr: [server_name, value] }
+      flavor: { get_param: [cluster_group, flavor] }
+      key_name: { get_param: cluster_user_keypair }
+      networks:
+        - port: { get_param: [node_ports, { get_param: node_idx }] }
+      image: { get_param: cluster_image }
       user_data_format: RAW
       user_data:
         str_replace:
@@ -78,7 +97,65 @@ resources:
             ssh_authorized_keys:
               - %deploy_public_key%
           params:
-            "%deploy_public_key%": { get_param: deploy_public_key }
+            "%deploy_public_key%": { get_param: cluster_deploy_public_key }
+
+  # It would be great to use a resource group to create an arbitrary number
+  # of volumes, but it takes us past the default maximum nesting depth
+  # So the hack is to allow the creation of up to a certain number of volumes
+  # using static definitions
+  volume_1:
+    condition: volume_1
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join:
+          - '-'
+          - [ { get_attr: [server_name, value] },
+              { get_param: [cluster_group, additional_volumes, 0, name] } ]
+      size: { get_param: [cluster_group, additional_volumes, 0, size] }
+
+  volume_1_attach:
+    condition: volume_1
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_resource: server }
+      volume_id: { get_resource: volume_1 }
+
+  volume_2:
+    condition: volume_2
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join:
+          - '-'
+          - [ { get_attr: [server_name, value] },
+              { get_param: [cluster_group, additional_volumes, 1, name] } ]
+      size: { get_param: [cluster_group, additional_volumes, 1, size] }
+
+  volume_2_attach:
+    condition: volume_2
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_resource: server }
+      volume_id: { get_resource: volume_2 }
+
+  volume_3:
+    condition: volume_3
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join:
+          - '-'
+          - [ { get_attr: [server_name, value] },
+              { get_param: [cluster_group, additional_volumes, 2, name] } ]
+      size: { get_param: [cluster_group, additional_volumes, 2, size] }
+
+  volume_3_attach:
+    condition: volume_3
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_resource: server }
+      volume_id: { get_resource: volume_3 }
 
 
 outputs:
@@ -88,5 +165,5 @@ outputs:
   instance_data:
     value:
       id: { get_resource: server }
-      name: { get_param: name }
-      ip: { get_param: [primary_ips, {get_param: node_idx}]}
+      name: { get_attr: [server_name, value] }
+      ip: { get_param: [primary_ips, { get_param: node_idx }] }
