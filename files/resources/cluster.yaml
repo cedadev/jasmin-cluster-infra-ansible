@@ -1,5 +1,5 @@
 ---
-heat_template_version: 2016-04-08
+heat_template_version: queens
 
 
 description: >
@@ -7,11 +7,6 @@ description: >
 
 
 parameters:
-  # This is required because yaql isn't available until Newton
-  cluster_group_count:
-    type: number
-    label: The number of node groups in the cluster
-
   cluster_groups:
     type: json
     label: List of dictionaries defining properties for each node group
@@ -55,7 +50,10 @@ resources:
   node_groups:
     type: OS::Heat::ResourceGroup
     properties:
-      count: { get_param: cluster_group_count }
+      count:
+        yaql:
+          expression: $.data.len()
+          data: { get_param: cluster_groups }
       resource_def:
         type: Cluster::Group
         properties:
