@@ -167,3 +167,5 @@ outputs:
       id: { get_resource: server }
       name: { get_attr: [server_name, value] }
       ip: { get_param: [primary_ips, { get_param: node_idx }] }
+      inventory_groups: { get_param: [cluster_group, inventory_groups] }
+      facts: { get_param: [cluster_group, facts] }

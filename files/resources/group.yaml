@@ -76,8 +76,6 @@ outputs:
     value:
       name: { get_param: [cluster_groups, { get_param: group_idx }, name] }
       nodes: { get_attr: [node_group, instance_data] }
-      inventory_groups: { get_param: [cluster_groups, { get_param: group_idx }, inventory_groups] }
-      facts: { get_param: [cluster_groups, { get_param: group_idx }, facts] }
       info:
         str_replace:
           template: { get_param: [cluster_groups, { get_param: group_idx }, info] }

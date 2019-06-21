@@ -26,15 +26,6 @@
         tag: "{{ cluster_tag | default(omit) }}"
       register: cluster_stack
 
-    # Hack pending outcome of:
-    # - https://github.com/ansible/ansible/pull/53757
-    # - https://review.openstack.org/643195
-    - name: Fixup cluster tags
-      command: "openstack stack update --wait --existing --tags {{ cluster_tag }} {{ cluster_name }}"
-      when:
-        - cluster_tag is defined
-        - cluster_state == 'present'
-
     # When updating a stack, only populate the inventory when cluster_state=present
     - name: Populate cluster inventory
       block:

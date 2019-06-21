@@ -7,12 +7,11 @@
       - "cluster_{{ cluster_name }}"
       - "{{ node_group.name }}"
       - "{{ cluster_name }}_{{ node_group.name }}"
-    node_group_inventory_groups: "{{ node_group.inventory_groups | default([], true) }}"
 
 - name: Add nodes for node group
   add_host:
     name: "{{ node.name }}"
-    groups: "{{ node_group_default_groups + node_group_inventory_groups }}"
+    groups: "{{ node_group_default_groups + (node.inventory_groups | default([], true)) }}"
     ansible_host: "{{ node.ip }}"
     ansible_user: "{{ cluster_ssh_user }}"
     ansible_ssh_private_key_file: "{{ cluster_ssh_private_key_file }}"
@@ -25,11 +24,11 @@
     loop_var: node
     label: "{{ node.name }}"
 
+# I tried 'set_fact: "{{ node.facts }}"', but it didn't work
+# So because blocks can't loop, we have to have another file
 - name: Set stored facts for nodes in node group
-  set_fact:
-    "{{ item.1.key }}": "{{ item.1.value }}"
-  delegate_to: "{{ item.0.name }}"
-  delegate_facts: true
-  loop: "{{ node_group.nodes | product(node_group.facts | default({}, true) | dict2items) | list }}"
+  include_tasks: set_node_facts.yml
+  loop: "{{ node_group.nodes }}"
   loop_control:
-    label: "{{ item.0.name }}, {{ item.1.key }}"
+    loop_var: node
+    label: "{{ node.name }}"
