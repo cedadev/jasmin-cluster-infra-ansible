@@ -45,6 +45,11 @@ parameters:
 
 
 conditions:
+  root_volume:
+    yaql:
+      expression: $.data.containsKey('root_volume_size')
+      data: { get_param: cluster_group }
+
   # It would be great to use a resource group to create an arbitrary number
   # of volumes, but it takes us past the default maximum nesting depth
   # So the hack is to allow the creation of up to a certain number of volumes
@@ -80,7 +85,36 @@ resources:
                 params:
                   "%node_idx%": { get_param: node_idx }
 
-  server:
+  server_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        ssh_authorized_keys:
+          - { get_param: cluster_deploy_public_key }
+
+  # Unfortunately we can't have a single server definition for both image and
+  # root volume (I tried every possible combination of things!!!)
+  # We can't even share the properties because the "properties" section cannot
+  # be an intrinsic, e.g. merge_map
+  server_with_volume:
+    condition: root_volume
+    type: OS::Nova::Server
+    properties:
+      name: { get_attr: [server_name, value] }
+      flavor: { get_param: [cluster_group, flavor] }
+      key_name: { get_param: cluster_user_keypair }
+      networks:
+        - port: { get_param: [node_ports, { get_param: node_idx }] }
+      block_device_mapping_v2:
+        - boot_index: 0
+          image: { get_param: cluster_image }
+          volume_size: { get_param: [cluster_group, root_volume_size] }
+          delete_on_termination: true
+      user_data_format: SOFTWARE_CONFIG
+      user_data: { get_resource: server_config }
+
+  server_with_image:
+    condition: { not: root_volume }
     type: OS::Nova::Server
     properties:
       name: { get_attr: [server_name, value] }
@@ -89,15 +123,8 @@ resources:
       networks:
         - port: { get_param: [node_ports, { get_param: node_idx }] }
       image: { get_param: cluster_image }
-      user_data_format: RAW
-      user_data:
-        str_replace:
-          template: |
-            #cloud-config
-            ssh_authorized_keys:
-              - %deploy_public_key%
-          params:
-            "%deploy_public_key%": { get_param: cluster_deploy_public_key }
+      user_data_format: SOFTWARE_CONFIG
+      user_data: { get_resource: server_config }
 
   # It would be great to use a resource group to create an arbitrary number
   # of volumes, but it takes us past the default maximum nesting depth
@@ -118,8 +145,13 @@ resources:
     condition: volume_1
     type: OS::Cinder::VolumeAttachment
     properties:
-      instance_uuid: { get_resource: server }
+      instance_uuid:
+        if:
+          - root_volume
+          - { get_resource: server_with_volume }
+          - { get_resource: server_with_image }
       volume_id: { get_resource: volume_1 }
+      mountpoint: { get_param: [cluster_group, additional_volumes, 0, device] }
 
   volume_2:
     condition: volume_2
@@ -136,8 +168,13 @@ resources:
     condition: volume_2
     type: OS::Cinder::VolumeAttachment
     properties:
-      instance_uuid: { get_resource: server }
+      instance_uuid:
+        if:
+          - root_volume
+          - { get_resource: server_with_volume }
+          - { get_resource: server_with_image }
       volume_id: { get_resource: volume_2 }
+      mountpoint: { get_param: [cluster_group, additional_volumes, 1, device] }
 
   volume_3:
     condition: volume_3
@@ -154,18 +191,40 @@ resources:
     condition: volume_3
     type: OS::Cinder::VolumeAttachment
     properties:
-      instance_uuid: { get_resource: server }
+      instance_uuid:
+        if:
+          - root_volume
+          - { get_resource: server_with_volume }
+          - { get_resource: server_with_image }
       volume_id: { get_resource: volume_3 }
+      mountpoint: { get_param: [cluster_group, additional_volumes, 2, device] }
 
 
 outputs:
   OS::stack_id:
-    value: { get_resource: server }
+    value:
+      if:
+        - root_volume
+        - { get_resource: server_with_volume }
+        - { get_resource: server_with_image }
 
   instance_data:
     value:
-      id: { get_resource: server }
+      id:
+        if:
+          - root_volume
+          - { get_resource: server_with_volume }
+          - { get_resource: server_with_image }
       name: { get_attr: [server_name, value] }
       ip: { get_param: [primary_ips, { get_param: node_idx }] }
       inventory_groups: { get_param: [cluster_group, inventory_groups] }
-      facts: { get_param: [cluster_group, facts] }
+      # Include information about the volumes in the node facts
+      facts:
+        map_merge:
+          - yaql:
+              expression: $.data.get('facts', {})
+              data: { get_param: cluster_group }
+          - cluster_attached_volumes:
+              yaql:
+                expression: $.data.get('additional_volumes', [])
+                data: { get_param: cluster_group }

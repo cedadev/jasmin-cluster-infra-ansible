@@ -28,6 +28,11 @@
     dest: "{{ cluster_ssh_private_key_file }}"
     mode: 0600
 
+- name: Determine if gateway configuration is required
+  set_fact:
+    # If a proxy command has already been specified, there is nothing to do
+    cluster_configure_gateway: "{{ cluster_gw_group is defined and cluster_gw_ssh_proxy_command is not defined }}"
+
 - name: Configure cluster gateway
   block:
     - name: Find gateway node group
@@ -56,21 +61,17 @@
     - name: Set cluster gateway proxy command
       set_fact:
         cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -i {{ cluster_gw_ssh_private_key_file }} -o UserKnownHostsFile={{ cluster_gw_ssh_known_hosts_file }} -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
-  when:
-    # If a proxy command has already been specified, there is nothing to do
-    - cluster_gw_group is defined
-    - cluster_gw_ssh_proxy_command is not defined
+  when: cluster_configure_gateway | bool
 
 - name: Set non-gateway node groups (gateway present)
   set_fact:
-    # Use the vars lookup to evaluate the existing value
     cluster_non_gateway_node_groups: "{{ cluster_node_groups | rejectattr('name', 'equalto', cluster_gw_group) | list }}"
-  when: cluster_gw_group is defined
+  when: cluster_configure_gateway | bool
 
 - name: Set non-gateway node groups (no gateway present)
   set_fact:
     cluster_non_gateway_node_groups: "{{ cluster_node_groups }}"
-  when: cluster_gw_group is not defined
+  when: not (cluster_configure_gateway | bool)
 
 - name: Build in-memory inventory
   include_tasks: add_inventory_group.yml
