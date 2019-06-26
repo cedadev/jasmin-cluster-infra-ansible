@@ -41,10 +41,9 @@ resources:
     type: OS::Nova::KeyPair
     properties:
       name:
-        str_replace:
-          template: "%stack_name%-deploy-key"
-          params:
-            "%stack_name%": { get_param: "OS::stack_name" }
+        list_join:
+          - '-'
+          - [{ get_param: "OS::stack_name" }, 'deploy-key']
       save_private_key: true
 
   node_groups:

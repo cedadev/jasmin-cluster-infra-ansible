@@ -42,6 +42,13 @@ parameters:
     label: The index of the group
 
 
+conditions:
+  root_volume:
+    yaql:
+      expression: $.data.containsKey('root_volume_size')
+      data: { get_param: [cluster_groups, { get_param: group_idx }] }
+
+
 resources:
   port_group:
     type: OS::Heat::ResourceGroup
@@ -59,7 +66,11 @@ resources:
     properties:
       count: { get_param: [cluster_groups, { get_param: group_idx }, num_nodes] }
       resource_def:
-        type: Cluster::Node
+        type:
+          if:
+            - root_volume
+            - "Cluster::NodeWithRootVolume"
+            - "Cluster::Node"
         properties:
           node_idx: "%index%"
           cluster_name: { get_param: cluster_name }
