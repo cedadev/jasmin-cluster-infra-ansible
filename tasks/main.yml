@@ -48,14 +48,19 @@
         stack: "{{ cluster_name }}"
         auth_type: "{{ cluster_auth_type or omit }}"
         auth: "{{ cluster_auth or omit }}"
+      # If cluster_state is not present, we don't care if this fails
+      ignore_errors: "{{ cluster_state != 'present' }}"
+      register: os_stack_outputs
 
-    - name: Extract facts from stack outputs
-      set_fact:
-        cluster_node_groups: "{{ openstack_stack_outputs.node_groups }}"
-        cluster_ssh_user: "{{ openstack_stack_outputs.deploy_user }}"
-        cluster_ssh_private_key: "{{ openstack_stack_outputs.deploy_private_key }}"
+    - block:
+        - name: Extract facts from stack outputs
+          set_fact:
+            cluster_node_groups: "{{ openstack_stack_outputs.node_groups }}"
+            cluster_ssh_user: "{{ openstack_stack_outputs.deploy_user }}"
+            cluster_ssh_private_key: "{{ openstack_stack_outputs.deploy_private_key }}"
 
-    - include_tasks: populate_inventory.yml
+        - include_tasks: populate_inventory.yml
+      when: os_stack_outputs is succeeded
   when:
     - not cluster_stack_update
     # If not populating the inventory, there is no point in reading the stack
