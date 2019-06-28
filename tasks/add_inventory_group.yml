@@ -15,10 +15,9 @@
     ansible_host: "{{ node.ip }}"
     ansible_user: "{{ cluster_ssh_user }}"
     ansible_ssh_private_key_file: "{{ cluster_ssh_private_key_file }}"
-    # Include the SSH known hosts file
-    # If there is a gateway proxy command set, use that also
+    # If there is a gateway proxy command set, use it
     #   Note that the gateway group is processed before the proxy command is set
-    ansible_ssh_common_args: "-o UserKnownHostsFile={{ cluster_ssh_known_hosts_file }} {{ cluster_gw_ssh_proxy_command | default('') }}"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ cluster_gw_ssh_proxy_command | default('') }}"
   loop: "{{ node_group.nodes }}"
   loop_control:
     loop_var: node

@@ -11,10 +11,9 @@
         openstack_project_id: "{{ openstack_token_cmd.stdout }}"
   when: not openstack_project_id
 
-- name: Set facts for private key and known_hosts files
+- name: Set private key file fact
   set_fact:
     cluster_ssh_private_key_file: "{{ home_dir }}/.ssh/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
-    cluster_ssh_known_hosts_file: "{{ home_dir }}/.ssh/known_hosts.{{ openstack_project_id }}.{{ cluster_name }}"
 
 - name: "Ensure {{ home_dir }}/.ssh exists"
   file:
@@ -54,13 +53,12 @@
       set_fact:
         cluster_gw_ssh_user: "{{ cluster_ssh_user }}"
         cluster_gw_ssh_private_key_file: "{{ cluster_ssh_private_key_file }}"
-        cluster_gw_ssh_known_hosts_file: "{{ cluster_ssh_known_hosts_file }}"
         cluster_gw_ip: "{{ cluster_gw_node_group.nodes | map(attribute='ip') | first }}"
         cluster_gw_inventory_hostname: "{{ cluster_gw_node_group.nodes | map(attribute='name') | first }}"
 
     - name: Set cluster gateway proxy command
       set_fact:
-        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -i {{ cluster_gw_ssh_private_key_file }} -o UserKnownHostsFile={{ cluster_gw_ssh_known_hosts_file }} -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
+        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -i {{ cluster_gw_ssh_private_key_file }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
   when: cluster_configure_gateway | bool
 
 - name: Set non-gateway node groups (gateway present)
