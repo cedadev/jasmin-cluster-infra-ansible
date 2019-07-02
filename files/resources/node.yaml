@@ -71,6 +71,7 @@ resources:
     properties:
       name: { get_attr: [server_name, value] }
       flavor: { get_param: [cluster_group, flavor] }
+      flavor_update_policy: REPLACE
       key_name: { get_param: cluster_user_keypair }
       networks:
         - port: { get_param: [node_ports, { get_param: node_idx }] }
