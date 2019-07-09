@@ -23,9 +23,9 @@
     loop_var: node
     label: "{{ node.name }}"
 
-# I tried 'set_fact: "{{ node.facts }}"', but it didn't work
+# Tried 'set_fact: "{{ node.facts }}"', but it didn't work
 # So because blocks can't loop, we have to have another file
-- name: Set stored facts for nodes in node group
+- name: Set facts for nodes in node group
   include_tasks: set_node_facts.yml
   loop: "{{ node_group.nodes }}"
   loop_control:

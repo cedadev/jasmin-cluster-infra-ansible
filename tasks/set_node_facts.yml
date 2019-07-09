@@ -1,5 +1,12 @@
 ---
 
+- name: Set gateway host fact
+  set_fact:
+    cluster_gateway_host: "{{ cluster_gateway_host }}"
+  delegate_to: "{{ node.name }}"
+  delegate_facts: true
+  when: cluster_gateway_host is defined
+
 - name: Set stored facts for node
   set_fact:
     "{{ item.key }}": "{{ item.value }}"

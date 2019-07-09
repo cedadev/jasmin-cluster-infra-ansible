@@ -41,6 +41,7 @@
     - name: Build in-memory inventory for gateway group
       include_tasks: add_inventory_group.yml
       vars:
+        cluster_gateway_host: true
         node_group: "{{ cluster_gw_node_group }}"
 
     - name: Wait for gateway host(s) to become available
