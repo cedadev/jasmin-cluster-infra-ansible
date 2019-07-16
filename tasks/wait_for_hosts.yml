@@ -1,49 +1,15 @@
 ---
 
-- name: Check for known hosts file
-  stat:
-    path: "{{ cluster_known_hosts_file }}"
-  register: known_hosts_file
-
-- name: Purge host IP from ssh known hosts
-  command: ssh-keygen -R "{{ hostvars[host].ansible_host }}" -f "{{ cluster_known_hosts_file }}"
-  when: known_hosts_file.stat.exists
-  loop: "{{ hosts }}"
-  loop_control:
-    loop_var: host
-
 - name: Wait for access to SSH port on nodes
   wait_for:
     host: "{{ hostvars[host].ansible_host }}"
     port: 22
     state: started
     timeout: 600
-  delegate_to: "{{ cluster_scan_host }}"
+  delegate_to: "{{ cluster_ssh_keyscan_host }}"
   loop: "{{ hosts }}"
   loop_control:
     loop_var: host
-
-- name: Scan for SSH keys
-  command: ssh-keyscan {{ hostvars[host].ansible_host }}
-  register: keyscan_results
-  changed_when: False
-  delegate_to: "{{ cluster_scan_host }}"
-  loop: "{{ hosts }}"
-  loop_control:
-    loop_var: host
-
-- name: Ensure servers are in SSH known hosts
-  blockinfile:
-    block: |
-      {% for key in item[1].stdout_lines %}
-      {{ key }}
-      {% endfor %}
-    create: true
-    marker: "# {mark} P3-APPLIANCES MANAGED BLOCK FOR {{ cluster_name }}.{{ item[0] }}"
-    path: "{{ cluster_known_hosts_file }}"
-  loop: "{{ hosts | zip(keyscan_results.results) | list }}"
-  loop_control:
-    label: "{{ item[0] }}"
 
 - name: "Wait for hosts to become available"
   ping:

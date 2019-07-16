@@ -1,5 +1,5 @@
 ---
-heat_template_version: 2016-04-08
+heat_template_version: queens
 
 
 description: >
@@ -7,11 +7,6 @@ description: >
 
 
 parameters:
-  # This is required because yaql isn't available until Newton
-  cluster_group_count:
-    type: number
-    label: The number of node groups in the cluster
-
   cluster_groups:
     type: json
     label: List of dictionaries defining properties for each node group
@@ -22,6 +17,10 @@ parameters:
     label: The image to use for cluster nodes (must be CentOS 7)
     constraints:
       - custom_constraint: glance.image
+
+  cluster_deploy_user:
+    type: string
+    label: The name of the SSH user for the given image.
 
   cluster_keypair:
     type: string
@@ -38,20 +37,27 @@ parameters:
 
 resources:
   # Create a known SSH key that can be used for automated deployments to this stack
+  # Keypairs are associated with a user and cross project boundaries
+  # This means that if a user deploys a cluster with the same name in two projects,
+  # they will share a key unless we use a project-specific identifier in the name
+  # It also means that deleting one of those clusters removes the key, and makes the
+  # other clusters with the same name unaccessible
   deploy_keypair:
     type: OS::Nova::KeyPair
     properties:
       name:
-        str_replace:
-          template: "%stack_name%-deploy-key"
-          params:
-            "%stack_name%": { get_param: "OS::stack_name" }
+        list_join:
+          - '-'
+          - ['deploy-key', { get_param: "OS::stack_name" }, { get_param: "OS::project_id" }]
       save_private_key: true
 
   node_groups:
     type: OS::Heat::ResourceGroup
     properties:
-      count: { get_param: cluster_group_count }
+      count:
+        yaql:
+          expression: $.data.len()
+          data: { get_param: cluster_groups }
       resource_def:
         type: Cluster::Group
         properties:
@@ -67,6 +73,9 @@ resources:
 outputs:
   node_groups:
     value: { get_attr: [node_groups, group_data] }
+
+  deploy_user:
+    value: { get_param: cluster_deploy_user }
 
   deploy_private_key:
     value: { get_attr: [deploy_keypair, private_key] }

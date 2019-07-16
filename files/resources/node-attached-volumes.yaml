@@ -1,0 +1,109 @@
+---
+heat_template_version: queens
+
+
+description: >
+  Resource for the attached volumes for a node.
+
+
+parameters:
+  server:
+    type: string
+    label: The server to attach volumes to
+    constraints:
+      - custom_constraint: nova.server
+
+  prefix:
+    type: string
+    label: The prefix for the volume names
+
+  volumes:
+    type: json
+    label: List of volume specifications
+    default: []
+
+
+conditions:
+  # It would be great to use a resource group to create an arbitrary number
+  # of volumes, but it takes us past the default maximum nesting depth
+  # So the hack is to allow the creation of up to a certain number of volumes
+  # using static definitions
+  volume_1:
+    yaql:
+      expression: $.data.len() >= 1
+      data: { get_param: volumes }
+
+  volume_2:
+    yaql:
+      expression: $.data.len() >= 2
+      data: { get_param: volumes }
+
+  volume_3:
+    yaql:
+      expression: $.data.len() >= 3
+      data: { get_param: volumes }
+
+
+resources:
+  # It would be great to use a resource group to create an arbitrary number
+  # of volumes, but it takes us past the default maximum nesting depth
+  # So the hack is to allow the creation of up to a certain number of volumes
+  # using static definitions
+  volume_1:
+    condition: volume_1
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join:
+          - '-'
+          - [{ get_param: prefix }, { get_param: [volumes, 0, name] }]
+      size: { get_param: [volumes, 0, size] }
+
+  volume_1_attach:
+    condition: volume_1
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_param: server }
+      volume_id: { get_resource: volume_1 }
+      mountpoint: { get_param: [volumes, 0, device] }
+
+  volume_2:
+    condition: volume_2
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join:
+          - '-'
+          - [{ get_param: prefix }, { get_param: [volumes, 1, name] }]
+      size: { get_param: [volumes, 1, size] }
+
+  volume_2_attach:
+    condition: volume_2
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_param: server }
+      volume_id: { get_resource: volume_2 }
+      mountpoint: { get_param: [volumes, 1, device] }
+
+  volume_3:
+    condition: volume_3
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join:
+          - '-'
+          - [{ get_param: prefix }, { get_param: [volumes, 2, name] }]
+      size: { get_param: [volumes, 2, size] }
+
+  volume_3_attach:
+    condition: volume_3
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_param: server }
+      volume_id: { get_resource: volume_3 }
+      mountpoint: { get_param: [volumes, 2, device] }
+
+
+outputs:
+  volumes:
+    value: { get_param: volumes }

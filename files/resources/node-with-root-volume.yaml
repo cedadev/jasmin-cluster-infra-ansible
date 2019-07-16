@@ -3,7 +3,7 @@ heat_template_version: queens
 
 
 description: >
-  Resource for a cluster node.
+  Resource for a cluster node whose root disk is a Cinder volume.
 
 
 parameters:
@@ -75,7 +75,11 @@ resources:
       key_name: { get_param: cluster_user_keypair }
       networks:
         - port: { get_param: [node_ports, { get_param: node_idx }] }
-      image: { get_param: cluster_image }
+      block_device_mapping_v2:
+        - boot_index: 0
+          image: { get_param: cluster_image }
+          volume_size: { get_param: [cluster_group, root_volume_size] }
+          delete_on_termination: true
       user_data_format: SOFTWARE_CONFIG
       user_data: { get_resource: server_config }
 

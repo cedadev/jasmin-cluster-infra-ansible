@@ -1,5 +1,5 @@
 ---
-heat_template_version: 2016-04-08
+heat_template_version: queens
 
 
 description: >
@@ -42,16 +42,23 @@ parameters:
     label: The index of the group
 
 
+conditions:
+  root_volume:
+    yaql:
+      expression: $.data.containsKey('root_volume_size')
+      data: { get_param: [cluster_groups, { get_param: group_idx }] }
+
+
 resources:
   port_group:
     type: OS::Heat::ResourceGroup
     properties:
-      count: { get_param: [cluster_groups, {get_param: group_idx}, num_nodes] }
+      count: { get_param: [cluster_groups, { get_param: group_idx }, num_nodes] }
       resource_def:
-        type: { get_param: [cluster_groups, {get_param: group_idx}, nodenet_resource ] }
+        type: { get_param: [cluster_groups, { get_param: group_idx }, nodenet_resource ] }
         properties:
           cluster_network: { get_param: cluster_network }
-          cluster_fips: { get_param: [cluster_groups, {get_param: group_idx}, nodenet_fips ] }
+          cluster_group: { get_param: [cluster_groups, { get_param: group_idx }] }
           node_idx: "%index%"
 
   node_group:
@@ -59,22 +66,19 @@ resources:
     properties:
       count: { get_param: [cluster_groups, { get_param: group_idx }, num_nodes] }
       resource_def:
-        type: { get_param: [cluster_groups, { get_param: group_idx }, node_resource] }
+        type:
+          if:
+            - root_volume
+            - "Cluster::NodeWithRootVolume"
+            - "Cluster::Node"
         properties:
           node_idx: "%index%"
-          name:
-            list_join:
-              - '-'
-              - [ { get_param: cluster_name },
-                  { get_param: [cluster_groups, { get_param: group_idx }, name] },
-                  '%index%' ]
-          image: { get_param: cluster_image }
-          flavor: { get_param: [cluster_groups, { get_param: group_idx }, flavor] }
-          user_keypair: { get_param: cluster_user_keypair }
-          deploy_public_key: { get_param: cluster_deploy_public_key }
-          network: { get_param: cluster_network }
-          root_volume_size: { get_param: [cluster_groups, { get_param: group_idx }, root_volume_size] }
-          group_node_ports: { get_attr: [port_group, primary_port] }
+          cluster_name: { get_param: cluster_name }
+          cluster_image: { get_param: cluster_image }
+          cluster_user_keypair: { get_param: cluster_user_keypair }
+          cluster_deploy_public_key: { get_param: cluster_deploy_public_key }
+          cluster_group: { get_param: [cluster_groups, { get_param: group_idx }] }
+          node_ports: { get_attr: [port_group, refs] }
           primary_ips: { get_attr: [port_group, primary_ip] }
 
 

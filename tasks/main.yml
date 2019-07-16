@@ -1,106 +1,67 @@
 ---
 
-- name: Create or update cluster Heat stack
-  os_stack:
-    name: "{{ cluster_name }}"
-    auth_type: "{{ cluster_auth_type or omit }}"
-    auth: "{{ cluster_auth or omit }}"
-    state: "{{ cluster_state }}"
-    environment: "{{ cluster_environment }}"
-    template: "{{ cluster_template }}"
-    parameters: "{{ cluster_parameters }}"
-    tag: "{{ cluster_tag | default(omit) }}"
-  register: cluster_stack
+- name: Create, update or delete cluster Heat stack
+  block:
+    # A stack update won't reconcile problems unless it knows about them
+    # It doesn't know about them unless a stack check has been run
+    - name: Check status of cluster Heat stack
+      os_stack_check:
+        name: "{{ cluster_name }}"
+        auth_type: "{{ cluster_auth_type or omit }}"
+        auth: "{{ cluster_auth or omit }}"
+      # We don't care if the check was successful or not
+      # The next step is to reconcile problems anyway
+      ignore_errors: true
+      when: cluster_state == 'present'
 
-# Hack pending outcome of:
-# - https://github.com/ansible/ansible/pull/53757
-# - https://review.openstack.org/643195
-- name: Fixup cluster tags
-  command: "openstack stack update --wait --existing --tags {{ cluster_tag }} {{ cluster_name }}"
-  when:
-    - cluster_tag is defined
-    - cluster_state == 'present'
+    - name: Create or update cluster Heat stack
+      os_stack:
+        name: "{{ cluster_name }}"
+        auth_type: "{{ cluster_auth_type or omit }}"
+        auth: "{{ cluster_auth or omit }}"
+        state: "{{ cluster_state }}"
+        environment: "{{ cluster_environment }}"
+        template: "{{ cluster_template }}"
+        parameters: "{{ cluster_parameters }}"
+        tag: "{{ cluster_tag | default(omit) }}"
+      register: cluster_stack
 
-- block:
-    - name: Find OpenStack project ID
+    # When updating a stack, only populate the inventory when cluster_state=present
+    - name: Populate cluster inventory
       block:
-        - name: Find project ID from token
-          command: openstack token issue -f value -c project_id
-          register: openstack_token_cmd
-
-        - name: Set openstack_project_id fact
+        - name: Extract facts from stack outputs
           set_fact:
-            openstack_project_id: "{{ openstack_token_cmd.stdout }}"
-      when: not openstack_project_id
+            cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
+            cluster_ssh_user: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_user') | first).output_value }}"
+            cluster_ssh_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
 
-    - name: Extract facts from stack
-      set_fact:
-        cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
-        cluster_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
-
-    - name: Extract facts for cluster gateway host from cluster stack
-      set_fact:
-        cluster_gw_user: "{{ cluster_parameters.cluster_groups | selectattr('name', 'equalto', cluster_gw_group) | map(attribute='user') | first }}"
-        cluster_gw_ip: "{{ (cluster_node_groups | selectattr('name', 'equalto', cluster_gw_group) | first).nodes | map(attribute='ip') | first }}"
-        cluster_node_group_gw: "{{ cluster_node_groups | selectattr('name', 'equalto', cluster_gw_group) | list }}"
+        - include_tasks: populate_inventory.yml
       when:
-        - cluster_gw_group is defined
-        - cluster_gw_user is not defined or cluster_gw_ip is not defined
+        - cluster_state == 'present'
+        - cluster_populate_inventory
+  when: cluster_stack_update
 
-    - name: Set facts for private key and known_hosts files
-      set_fact:
-        cluster_private_key_file: "{{ home_dir }}/.ssh/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
-        cluster_known_hosts_file: "{{ home_dir }}/.ssh/known_hosts.{{ openstack_project_id }}.{{ cluster_name }}"
+- name: Extract facts from existing stack
+  block:
+    - name: Get stack outputs
+      os_stack_outputs:
+        stack: "{{ cluster_name }}"
+        auth_type: "{{ cluster_auth_type or omit }}"
+        auth: "{{ cluster_auth or omit }}"
+      # If cluster_state is not present, we don't care if this fails
+      ignore_errors: "{{ cluster_state != 'present' }}"
+      register: os_stack_outputs
 
-    - name: "Ensure {{ home_dir }}/.ssh exists"
-      file:
-        path: "{{ home_dir }}/.ssh"
-        state: directory
-        mode: 0700
+    - block:
+        - name: Extract facts from stack outputs
+          set_fact:
+            cluster_node_groups: "{{ openstack_stack_outputs.node_groups }}"
+            cluster_ssh_user: "{{ openstack_stack_outputs.deploy_user }}"
+            cluster_ssh_private_key: "{{ openstack_stack_outputs.deploy_private_key }}"
 
-    - name: Write cluster private key
-      copy:
-        content: "{{ cluster_private_key }}"
-        dest: "{{ cluster_private_key_file }}"
-        mode: 0600
-
-    - name: Build in-memory inventory for gateway group/host
-      include_tasks: add_inventory_group.yml
-      with_items: "{{ cluster_node_group_gw }}"
-      loop_control:
-        loop_var: group
-      when:
-        - cluster_gw_group is defined
-        - cluster_gw_host is not defined
-
-    - name: Build in-memory inventory
-      include_tasks: add_inventory_group.yml
-      with_items: "{{ cluster_node_groups }}"
-      loop_control:
-        loop_var: group
-
-    - name: Select gateway host where group is designated
-      set_fact:
-        cluster_gw_host: "{{ groups[cluster_gw_group] | first }}"
-      when:
-        - cluster_gw_group is defined
-        - cluster_gw_host is not defined
-
-    # We do this by attempting to ping the nodes
-    - name: Wait for nodes to become accessible
-      block:
-        # First, wait for hosts in the gateway group
-        - name: Wait for gateway hosts
-          include_tasks: wait_for_hosts.yml
-          vars:
-            cluster_scan_host: "{{ inventory_hostname }}"
-            hosts: "{{ groups[cluster_gw_group] }}"
-          when: cluster_gw_group is defined
-
-        # Then wait for the rest of the cluster hosts
-        - name: Wait for cluster hosts
-          include_tasks: wait_for_hosts.yml
-          vars:
-            cluster_scan_host: "{{ cluster_gw_host | default(inventory_hostname) }}"
-            hosts: "{{ query('inventory_hostnames', 'cluster:!' + cluster_gw_group) }}"
-  when: cluster_state == 'present' and not cluster_stack_update_only
+        - include_tasks: populate_inventory.yml
+      when: os_stack_outputs is succeeded
+  when:
+    - not cluster_stack_update
+    # If not populating the inventory, there is no point in reading the stack
+    - cluster_populate_inventory

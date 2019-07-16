@@ -1,0 +1,87 @@
+---
+
+- name: Find OpenStack project ID
+  block:
+    - name: Find project ID from token
+      command: openstack token issue -f value -c project_id
+      register: openstack_token_cmd
+
+    - name: Set openstack_project_id fact
+      set_fact:
+        openstack_project_id: "{{ openstack_token_cmd.stdout }}"
+  when: not openstack_project_id
+
+- name: Set private key file fact
+  set_fact:
+    cluster_ssh_private_key_file: "{{ home_dir }}/.ssh/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
+
+- name: "Ensure {{ home_dir }}/.ssh exists"
+  file:
+    path: "{{ home_dir }}/.ssh"
+    state: directory
+    mode: 0700
+
+- name: Write cluster private key
+  copy:
+    content: "{{ cluster_ssh_private_key }}"
+    dest: "{{ cluster_ssh_private_key_file }}"
+    mode: 0600
+
+- name: Determine if gateway configuration is required
+  set_fact:
+    # If a proxy command has already been specified, there is nothing to do
+    cluster_configure_gateway: "{{ cluster_gw_group is defined and cluster_gw_ssh_proxy_command is not defined }}"
+
+- name: Configure cluster gateway
+  block:
+    - name: Find gateway node group
+      set_fact:
+        cluster_gw_node_group: "{{ cluster_node_groups | selectattr('name', 'equalto', cluster_gw_group) | first }}"
+
+    - name: Build in-memory inventory for gateway group
+      include_tasks: add_inventory_group.yml
+      vars:
+        cluster_gateway_host: true
+        node_group: "{{ cluster_gw_node_group }}"
+
+    - name: Wait for gateway host(s) to become available
+      include_tasks: wait_for_hosts.yml
+      vars:
+        cluster_ssh_keyscan_host: "{{ inventory_hostname }}"
+        hosts: "{{ cluster_gw_node_group.nodes | map(attribute='name') | list }}"
+
+    - name: Set cluster gateway facts
+      set_fact:
+        cluster_gw_ssh_user: "{{ cluster_ssh_user }}"
+        cluster_gw_ssh_private_key_file: "{{ cluster_ssh_private_key_file }}"
+        cluster_gw_ip: "{{ cluster_gw_node_group.nodes | map(attribute='ip') | first }}"
+        cluster_gw_inventory_hostname: "{{ cluster_gw_node_group.nodes | map(attribute='name') | first }}"
+
+    - name: Set cluster gateway proxy command
+      set_fact:
+        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -i {{ cluster_gw_ssh_private_key_file }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
+  when: cluster_configure_gateway | bool
+
+- name: Set non-gateway node groups (gateway present)
+  set_fact:
+    cluster_non_gateway_node_groups: "{{ cluster_node_groups | rejectattr('name', 'equalto', cluster_gw_group) | list }}"
+  when: cluster_configure_gateway | bool
+
+- name: Set non-gateway node groups (no gateway present)
+  set_fact:
+    cluster_non_gateway_node_groups: "{{ cluster_node_groups }}"
+  when: not (cluster_configure_gateway | bool)
+
+- name: Build in-memory inventory
+  include_tasks: add_inventory_group.yml
+  loop: "{{ cluster_non_gateway_node_groups }}"
+  loop_control:
+    loop_var: node_group
+    label: "{{ node_group.name }}"
+
+- name: Wait for nodes to become accessible
+  include_tasks: wait_for_hosts.yml
+  vars:
+    # Use the gateway host if given, otherwise the current inventory host
+    cluster_ssh_keyscan_host: "{{ cluster_gw_inventory_hostname | default(inventory_hostname) }}"
+    hosts: "{{ cluster_non_gateway_node_groups | map(attribute='nodes') | flatten | map(attribute='name') | list }}"

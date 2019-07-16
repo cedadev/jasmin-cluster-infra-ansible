@@ -7,15 +7,15 @@ cluster_environment:
   - "{{ role_path }}/files/environment.yaml"
 cluster_template: "{{ role_path }}/files/resources/cluster.yaml"
 cluster_parameters:
-  cluster_group_count: "{{ cluster_groups | length }}"
   cluster_groups: "{{ cluster_groups }}"
   cluster_keypair: "{{ cluster_keypair }}"
   cluster_network: "{{ cluster_network }}"
   cluster_image: "{{ cluster_image }}"
+  cluster_deploy_user: "{{ cluster_deploy_user | default('root') }}"
 
-private_data_dir: "{{ lookup('env', 'AWX_ISOLATED_DATA_DIR') | default(playbook_dir, true) }}"
 home_dir: "{{ lookup('env', 'HOME') }}"
 
-cluster_stack_update_only: false
+cluster_stack_update: true
+cluster_populate_inventory: true
 
 openstack_project_id: "{{ lookup('env', 'OS_PROJECT_ID') }}"
