@@ -7,17 +7,12 @@
     state: started
     timeout: 600
   delegate_to: "{{ cluster_ssh_keyscan_host }}"
-  loop: "{{ hosts }}"
-  loop_control:
-    loop_var: host
 
 - name: "Wait for hosts to become available"
   ping:
   delegate_to: "{{ host }}"
   register: host_available
+  failed_when: host_available is failed
   until: host_available is succeeded
   retries: 60
   delay: 5
-  loop: "{{ hosts }}"
-  loop_control:
-    loop_var: host
