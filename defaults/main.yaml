@@ -3,17 +3,20 @@
 cluster_state: present
 cluster_auth_type:
 cluster_auth:
+
 cluster_environment:
   - "{{ role_path }}/files/environment.yaml"
 cluster_template: "{{ role_path }}/files/resources/cluster.yaml"
 cluster_parameters:
   cluster_groups: "{{ cluster_groups }}"
-  cluster_keypair: "{{ cluster_keypair }}"
   cluster_network: "{{ cluster_network }}"
   cluster_image: "{{ cluster_image }}"
   cluster_deploy_user: "{{ cluster_deploy_user | default('root') }}"
+  cluster_ssh_public_keys:
+    - "{{ cluster_user_ssh_public_key }}"
+    - "{{ cluster_deploy_ssh_public_key }}"
 
-home_dir: "{{ lookup('env', 'HOME') }}"
+ssh_directory: "{{ lookup('env', 'HOME') }}/.ssh"
 
 cluster_stack_update: true
 cluster_populate_inventory: true

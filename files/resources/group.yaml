@@ -21,15 +21,11 @@ parameters:
     constraints:
       - custom_constraint: glance.image
 
-  cluster_user_keypair:
-    type: string
-    label: SSH key pair for user access to the cluster
-    constraints:
-      - custom_constraint: nova.keypair
-
-  cluster_deploy_public_key:
-    type: string
-    label: SSH public key for deployments to the cluster
+  # We can't use Nova keypairs if we want more than one user to be
+  # able to administer the cluster, as they are owned by a user
+  cluster_ssh_public_keys:
+    type: json
+    label: List of SSH public keys to inject into the cluster
 
   cluster_network:
     type: string
@@ -75,8 +71,7 @@ resources:
           node_idx: "%index%"
           cluster_name: { get_param: cluster_name }
           cluster_image: { get_param: cluster_image }
-          cluster_user_keypair: { get_param: cluster_user_keypair }
-          cluster_deploy_public_key: { get_param: cluster_deploy_public_key }
+          cluster_ssh_public_keys: { get_param: cluster_ssh_public_keys }
           cluster_group: { get_param: [cluster_groups, { get_param: group_idx }] }
           node_ports: { get_attr: [port_group, refs] }
           primary_ips: { get_attr: [port_group, primary_ip] }
@@ -87,8 +82,3 @@ outputs:
     value:
       name: { get_param: [cluster_groups, { get_param: group_idx }, name] }
       nodes: { get_attr: [node_group, instance_data] }
-      info:
-        str_replace:
-          template: { get_param: [cluster_groups, { get_param: group_idx }, info] }
-          params:
-            "\"$PRIMARY_IPS\"": { get_attr: [port_group, primary_ip] }

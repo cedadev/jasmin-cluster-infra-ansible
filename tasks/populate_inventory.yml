@@ -1,32 +1,5 @@
 ---
 
-- name: Find OpenStack project ID
-  block:
-    - name: Find project ID from token
-      command: openstack token issue -f value -c project_id
-      register: openstack_token_cmd
-
-    - name: Set openstack_project_id fact
-      set_fact:
-        openstack_project_id: "{{ openstack_token_cmd.stdout }}"
-  when: not openstack_project_id
-
-- name: Set private key file fact
-  set_fact:
-    cluster_ssh_private_key_file: "{{ home_dir }}/.ssh/ssh_private_key.{{ openstack_project_id }}.{{ cluster_name }}"
-
-- name: "Ensure {{ home_dir }}/.ssh exists"
-  file:
-    path: "{{ home_dir }}/.ssh"
-    state: directory
-    mode: 0700
-
-- name: Write cluster private key
-  copy:
-    content: "{{ cluster_ssh_private_key }}"
-    dest: "{{ cluster_ssh_private_key_file }}"
-    mode: 0600
-
 - name: Determine if gateway configuration is required
   set_fact:
     # If a proxy command has already been specified, there is nothing to do

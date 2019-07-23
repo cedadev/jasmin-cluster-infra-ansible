@@ -1,5 +1,30 @@
 ---
 
+- name: Get OpenStack project ID
+  os_project_id:
+  when: not openstack_project_id
+
+- name: Set private key file fact
+  set_fact:
+    cluster_ssh_private_key_file: "{{ ssh_directory }}/private_key.{{ openstack_project_id }}.{{ cluster_name }}"
+
+- name: Ensure SSH directory exists
+  file:
+    path: "{{ ssh_directory }}"
+    state: directory
+    mode: 0700
+
+- name: Create cluster keypair
+  openssh_keypair:
+    path: "{{ cluster_ssh_private_key_file }}"
+    type: rsa
+    size: 2048
+  register: deploy_ssh_keypair
+
+- name: Extract deploy public key
+  set_fact:
+    cluster_deploy_ssh_public_key: "{{ deploy_ssh_keypair.public_key }}"
+
 - name: Create, update or delete cluster Heat stack
   block:
     # A stack update won't reconcile problems unless it knows about them
@@ -33,7 +58,6 @@
           set_fact:
             cluster_node_groups: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'node_groups') | first).output_value }}"
             cluster_ssh_user: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_user') | first).output_value }}"
-            cluster_ssh_private_key: "{{ (cluster_stack.stack.outputs | selectattr('output_key', 'equalto', 'deploy_private_key') | first).output_value }}"
 
         - include_tasks: populate_inventory.yml
       when:
@@ -57,7 +81,6 @@
           set_fact:
             cluster_node_groups: "{{ openstack_stack_outputs.node_groups }}"
             cluster_ssh_user: "{{ openstack_stack_outputs.deploy_user }}"
-            cluster_ssh_private_key: "{{ openstack_stack_outputs.deploy_private_key }}"
 
         - include_tasks: populate_inventory.yml
       when: os_stack_outputs is succeeded

@@ -17,15 +17,11 @@ parameters:
     constraints:
       - custom_constraint: glance.image
 
-  cluster_user_keypair:
-    type: string
-    label: SSH key pair for user access to the cluster
-    constraints:
-      - custom_constraint: nova.keypair
-
-  cluster_deploy_public_key:
-    type: string
-    label: SSH public key for deployments to the cluster
+  # We can't use Nova keypairs if we want more than one user to be
+  # able to administer the cluster, as they are owned by a user
+  cluster_ssh_public_keys:
+    type: json
+    label: List of SSH public keys to inject into the cluster
 
   cluster_group:
     type: json
@@ -63,8 +59,7 @@ resources:
     type: OS::Heat::CloudConfig
     properties:
       cloud_config:
-        ssh_authorized_keys:
-          - { get_param: cluster_deploy_public_key }
+        ssh_authorized_keys: { get_param: cluster_ssh_public_keys }
 
   server:
     type: OS::Nova::Server
@@ -72,12 +67,13 @@ resources:
       name: { get_attr: [server_name, value] }
       flavor: { get_param: [cluster_group, flavor] }
       flavor_update_policy: REPLACE
-      key_name: { get_param: cluster_user_keypair }
       networks:
         - port: { get_param: [node_ports, { get_param: node_idx }] }
       image: { get_param: cluster_image }
       user_data_format: SOFTWARE_CONFIG
       user_data: { get_resource: server_config }
+      # Just ignore changes to the user data
+      user_data_update_policy: IGNORE
 
   attached_volumes:
     type: Cluster::Node::AttachedVolumes
