@@ -45,9 +45,10 @@
         node_group: "{{ cluster_gw_node_group }}"
 
     - name: Wait for gateway host(s) to become available
-      include_tasks: wait_for_host.yml
-      vars:
-        cluster_ssh_keyscan_host: "{{ inventory_hostname }}"
+      wait_for_connection:
+        # Wait for 5 mins for host to become available
+        timeout: 300
+      delegate_to: "{{ host }}"
       loop: "{{ cluster_gw_node_group.nodes | map(attribute='name') | list }}"
       loop_control:
         loop_var: host
@@ -82,10 +83,10 @@
     label: "{{ node_group.name }}"
 
 - name: Wait for nodes to become accessible
-  include_tasks: wait_for_host.yml
-  vars:
-    # Use the gateway host if given, otherwise the current inventory host
-    cluster_ssh_keyscan_host: "{{ cluster_gw_inventory_hostname | default(inventory_hostname) }}"
+  wait_for_connection:
+    # Wait for 5 mins for host to become available
+    timeout: 300
+  delegate_to: "{{ host }}"
   loop: "{{ cluster_non_gateway_node_groups | map(attribute='nodes') | flatten | map(attribute='name') | list }}"
   loop_control:
     loop_var: host
