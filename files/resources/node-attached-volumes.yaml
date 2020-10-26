@@ -65,7 +65,6 @@ resources:
     properties:
       instance_uuid: { get_param: server }
       volume_id: { get_resource: volume_1 }
-      mountpoint: { get_param: [volumes, 0, device] }
 
   volume_2:
     condition: volume_2
@@ -83,7 +82,6 @@ resources:
     properties:
       instance_uuid: { get_param: server }
       volume_id: { get_resource: volume_2 }
-      mountpoint: { get_param: [volumes, 1, device] }
 
   volume_3:
     condition: volume_3
@@ -101,9 +99,27 @@ resources:
     properties:
       instance_uuid: { get_param: server }
       volume_id: { get_resource: volume_3 }
-      mountpoint: { get_param: [volumes, 2, device] }
 
 
 outputs:
   volumes:
-    value: { get_param: volumes }
+    value:
+      list_concat:
+        - if:
+            - volume_1
+            - - name: { get_param: [volumes, 0, name] }
+                size: { get_param: [volumes, 0, size] }
+                device: { get_attr: [volume_1, attachments_list, 0, device] }
+            - []
+        - if:
+            - volume_2
+            - - name: { get_param: [volumes, 1, name] }
+                size: { get_param: [volumes, 1, size] }
+                device: { get_attr: [volume_2, attachments_list, 0, device] }
+            - []
+        - if:
+            - volume_3
+            - - name: { get_param: [volumes, 2, name] }
+                size: { get_param: [volumes, 2, size] }
+                device: { get_attr: [volume_3, attachments_list, 0, device] }
+            - []
