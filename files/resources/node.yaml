@@ -74,6 +74,7 @@ resources:
       user_data: { get_resource: server_config }
       # Just ignore changes to the user data
       user_data_update_policy: IGNORE
+      metadata: {'provisioned_by_caas': 1}
 
   attached_volumes:
     type: Cluster::Node::AttachedVolumes
