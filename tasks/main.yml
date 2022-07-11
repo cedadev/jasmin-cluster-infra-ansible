@@ -1,5 +1,4 @@
 ---
-
 - name: Get OpenStack project ID
   os_project_id:
   when: not openstack_project_id
@@ -40,7 +39,7 @@
       when: cluster_state == 'present'
 
     - name: Create or update cluster Heat stack
-      os_stack:
+      openstack.cloud.stack:
         name: "{{ cluster_name }}"
         auth_type: "{{ cluster_auth_type or omit }}"
         auth: "{{ cluster_auth or omit }}"
