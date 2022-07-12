@@ -13,16 +13,28 @@
     state: directory
     mode: 0700
 
-- name: Create cluster keypair
-  openssh_keypair:
-    path: "{{ cluster_ssh_private_key_file }}"
-    type: rsa
-    size: 2048
-  register: deploy_ssh_keypair
+#- name: Create cluster keypair
+#  openssh_keypair:
+#    path: "{{ cluster_ssh_private_key_file }}"
+#    type: rsa
+#    size: 2048
+#  register: deploy_ssh_keypair
+
+- name: Get the cluster private key from environment variable.
+  ansible.builtin.copy:
+    content: "{{ lookup('ansible.builtin.env', 'SSH_KEY') }}"
+    dest: "{{ cluster_ssh_private_key_file }}"
+
+- name: Get the cluster public key from environment variable.
+  community.crypto.openssl_publickey:
+    privatekey_content: "{{ lookup('ansible.builtin.env', 'SSH_KEY') }}"
+    return_content: yes
+    path: "{{ cluster_ssh_private_key_file }}.pub"
+  register: ssh_public_key
 
 - name: Extract deploy public key
   set_fact:
-    cluster_deploy_ssh_public_key: "{{ deploy_ssh_keypair.public_key }}"
+    cluster_deploy_ssh_public_key: "{{ ssh_public_key.publickey }}"
 
 - name: Create, update or delete cluster Heat stack
   block:
@@ -49,10 +61,6 @@
         parameters: "{{ cluster_parameters }}"
         tag: "{{ cluster_tag | default(omit) }}"
       register: cluster_stack
-
-    - name: What is going on with the cluster stack?
-      debug:
-        var: cluster_stack
 
     # When updating a stack, only populate the inventory when cluster_state=present
     - name: Populate cluster inventory
