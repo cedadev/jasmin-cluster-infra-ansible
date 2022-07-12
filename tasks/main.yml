@@ -13,12 +13,12 @@
     state: directory
     mode: 0700
 
-#- name: Create cluster keypair
-#  openssh_keypair:
-#    path: "{{ cluster_ssh_private_key_file }}"
-#    type: rsa
-#    size: 2048
-#  register: deploy_ssh_keypair
+- name: Create cluster keypair
+  openssh_keypair:
+    path: "{{ cluster_ssh_private_key_file }}"
+    type: rsa
+    size: 2048
+  register: deploy_ssh_keypair
 
 #- name: Get the cluster private key from environment variable.
 #  ansible.builtin.copy:
