@@ -1,5 +1,4 @@
 ---
-
 - name: Get OpenStack project ID
   os_project_id:
   when: not openstack_project_id
@@ -29,18 +28,18 @@
   block:
     # A stack update won't reconcile problems unless it knows about them
     # It doesn't know about them unless a stack check has been run
-    - name: Check status of cluster Heat stack
-      os_stack_check:
-        name: "{{ cluster_name }}"
-        auth_type: "{{ cluster_auth_type or omit }}"
-        auth: "{{ cluster_auth or omit }}"
-      # We don't care if the check was successful or not
-      # The next step is to reconcile problems anyway
-      ignore_errors: true
-      when: cluster_state == 'present'
+    #- name: Check status of cluster Heat stack
+    #  os_stack_check:
+    #    name: "{{ cluster_name }}"
+    #    auth_type: "{{ cluster_auth_type or omit }}"
+    #    auth: "{{ cluster_auth or omit }}"
+    #  # We don't care if the check was successful or not
+    #  # The next step is to reconcile problems anyway
+    #  ignore_errors: true
+    #  when: cluster_state == 'present'
 
     - name: Create or update cluster Heat stack
-      os_stack:
+      openstack.cloud.stack:
         name: "{{ cluster_name }}"
         auth_type: "{{ cluster_auth_type or omit }}"
         auth: "{{ cluster_auth or omit }}"
@@ -50,6 +49,10 @@
         parameters: "{{ cluster_parameters }}"
         tag: "{{ cluster_tag | default(omit) }}"
       register: cluster_stack
+
+    - name: What is going on with the cluster stack?
+      debug:
+        var: cluster_stack
 
     # When updating a stack, only populate the inventory when cluster_state=present
     - name: Populate cluster inventory
