@@ -49,6 +49,8 @@
         parameters: "{{ cluster_parameters }}"
         tag: "{{ cluster_tag | default(omit) }}"
       register: cluster_stack
+      retry: 2
+      delay: 10
 
     - name: What is going on with the cluster stack?
       debug:
