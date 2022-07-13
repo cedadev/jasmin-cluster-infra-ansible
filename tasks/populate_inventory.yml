@@ -35,7 +35,7 @@
 
     - name: Set cluster gateway proxy command
       set_fact:
-        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -i {{ cluster_gw_ssh_private_key_file }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
+        cluster_gw_ssh_proxy_command: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %h:%p {{ cluster_gw_ssh_user }}@{{ cluster_gw_ip }}'"
   when: cluster_configure_gateway | bool
 
 - name: Set non-gateway node groups (gateway present)

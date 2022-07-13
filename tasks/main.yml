@@ -20,21 +20,9 @@
 #    size: 2048
 #  register: deploy_ssh_keypair
 
-- name: Get the cluster private key from environment variable.
-  ansible.builtin.copy:
-    content: "{{ lookup('ansible.builtin.env', 'SSH_PRIVATE_KEY') }}"
-    dest: "{{ cluster_ssh_private_key_file }}"
-
-- name: Get the cluster public key from environment variable.
-  community.crypto.openssl_publickey:
-    privatekey_content: "{{ lookup('ansible.builtin.env', 'SSH_PRIVATE_KEY') }}"
-    return_content: yes
-    path: "{{ cluster_ssh_private_key_file }}.pub"
-  register: ssh_public_key
-
-- name: Extract deploy public key
-  set_fact:
-    cluster_deploy_ssh_public_key: "{{ ssh_public_key.publickey }}"
+#- name: Extract deploy public key
+#  set_fact:
+#    cluster_deploy_ssh_public_key: "{{ ssh_public_key.publickey }}"
 
 - name: Create, update or delete cluster Heat stack
   block:
