@@ -3,9 +3,9 @@
   os_project_id:
   when: not openstack_project_id
 
-- name: Set private key file fact
-  set_fact:
-    cluster_ssh_private_key_file: "{{ ssh_directory }}/private_key.{{ openstack_project_id }}.{{ cluster_name }}"
+#- name: Set private key file fact
+#  set_fact:
+#    cluster_ssh_private_key_file: "{{ ssh_directory }}/private_key.{{ openstack_project_id }}.{{ cluster_name }}"
 
 - name: Ensure SSH directory exists
   file:
@@ -20,9 +20,9 @@
 #    size: 2048
 #  register: deploy_ssh_keypair
 
-#- name: Extract deploy public key
-#  set_fact:
-#    cluster_deploy_ssh_public_key: "{{ ssh_public_key.publickey }}"
+- name: Extract deploy public key
+  set_fact:
+    cluster_deploy_ssh_public_key: "{{ lookup('ansible.builtin.env', 'SSH_PUBLIC_KEY') }}"
 
 - name: Create, update or delete cluster Heat stack
   block:
