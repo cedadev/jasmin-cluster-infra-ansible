@@ -51,7 +51,7 @@
       register: cluster_stack
       retries: 2
       delay: 10
-      until: result is not failed
+      until: cluster_stack is not failed
 
     - name: What is going on with the cluster stack?
       debug:
