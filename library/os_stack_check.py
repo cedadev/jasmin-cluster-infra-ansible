@@ -87,11 +87,11 @@ def main():
         start = time.time()
         while time.time() < start + timeout:
             stack = cloud.orchestration.get_stack(stack)
-            if stack.description != 'CHECK_IN_PROGRESS':
+            if stack.status != 'CHECK_IN_PROGRESS':
                 break
         else:
             raise StackCheckTimeoutError('Timed out waiting for stack check.')
-        if stack.description == 'CHECK_COMPLETE':
+        if stack.status == 'CHECK_COMPLETE':
             # Don't count what we've done as a change
             module.exit_json(changed = False, id = stack.id, stack = stack)
         else:
