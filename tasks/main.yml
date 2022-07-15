@@ -27,6 +27,10 @@
       ignore_errors: true
       when: cluster_state == 'present'
 
+    - name: Is the tag getting here?
+      ansible.builtin.debug:
+        var: cluster_tag
+
     - name: Create or update cluster Heat stack
       openstack.cloud.stack:
         name: "{{ cluster_name }}"
