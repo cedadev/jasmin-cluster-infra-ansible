@@ -40,7 +40,8 @@
         environment: "{{ cluster_environment }}"
         template: "{{ cluster_template }}"
         parameters: "{{ cluster_parameters }}"
-        tag: "TEST" #"{{ cluster_tag | default(omit) }}"
+        tags: "identity"
+        #"{{ cluster_tag | default(omit) }}"
       register: cluster_stack
       retries: 2
       delay: 10
