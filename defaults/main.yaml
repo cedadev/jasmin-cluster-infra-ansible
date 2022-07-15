@@ -1,5 +1,4 @@
 ---
-
 cluster_state: present
 cluster_auth_type:
 cluster_auth:
@@ -15,6 +14,7 @@ cluster_parameters:
   cluster_ssh_public_keys:
     - "{{ cluster_user_ssh_public_key }}"
     - "{{ cluster_deploy_ssh_public_key }}"
+  tags: "identity"
 
 ssh_directory: "{{ lookup('env', 'HOME') }}/.ssh"
 
