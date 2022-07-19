@@ -3,15 +3,10 @@
   os_project_id:
   when: not openstack_project_id
 
-- name: Ensure SSH directory exists
-  file:
-    path: "{{ ssh_directory }}"
-    state: directory
-    mode: 0700
-
-- name: Extract deploy public key
+- name: Set SSH Key facts
   set_fact:
-    cluster_deploy_ssh_public_key: "{{ lookup('ansible.builtin.env', 'SSH_PUBLIC_KEY') }}"
+    cluster_ssh_private_key_file: "{{ loopup('ansible.builtin.env', 'SSH_PRIVATE_KEY_FILE') }}"
+    cluster_deploy_ssh_public_key: "{{ lookup('ansible.builtin.file', 'SSH_PUBLIC_KEY_FILE') }}"
 
 - name: Create, update or delete cluster Heat stack
   block:
@@ -26,10 +21,6 @@
       # The next step is to reconcile problems anyway
       ignore_errors: true
       when: cluster_state == 'present'
-
-    - name: Is the tag getting here?
-      ansible.builtin.debug:
-        var: cluster_tag
 
     - name: Create or update cluster Heat stack
       openstack.cloud.stack:
