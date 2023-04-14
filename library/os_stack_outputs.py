@@ -49,9 +49,9 @@ EXAMPLES = """
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from openstack.cloud.plugins.module_utils.openstack import (
-    openstack_cloud_from_module, openstack_full_argument_spec,
-    openstack_module_kwargs)
+from ansible.module_utils.openstack import (openstack_cloud_from_module,
+                                            openstack_full_argument_spec,
+                                            openstack_module_kwargs)
 
 
 def main():
