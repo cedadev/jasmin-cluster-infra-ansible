@@ -1,5 +1,4 @@
 ---
-
 - name: Determine if gateway configuration is required
   set_fact:
     # If a proxy command has already been specified, there is nothing to do

@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
 ---
 module: os_project_id
 short_description: Get the current project id.
@@ -20,24 +23,24 @@ requirements:
   - "python >= 2.7"
   - "openstacksdk"
 options: {}
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 ---
 
 - name: Get project ID
   os_project_id:
 
 - debug: var=openstack_project_id
-'''
+"""
 
 
 import time
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.openstack import (openstack_full_argument_spec,
-                                            openstack_module_kwargs,
-                                            openstack_cloud_from_module)
+from ansible.module_utils.openstack import (openstack_cloud_from_module,
+                                            openstack_full_argument_spec,
+                                            openstack_module_kwargs)
 
 
 def main():
@@ -47,10 +50,9 @@ def main():
 
     sdk, cloud = openstack_cloud_from_module(module)
     module.exit_json(
-        changed = False,
-        ansible_facts = dict(openstack_project_id = cloud.current_project.id)
+        changed=False, ansible_facts=dict(openstack_project_id=cloud.current_project.id)
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
